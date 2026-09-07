@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne-refract.svg)](https://pkg.go.dev/github.com/timzifer/fyne-refract)
-[![Go Report Card](https://goreportcard.com/badge/github.com/timzifer/fyne-refract)](https://goreportcard.com/report/github.com/timzifer/fyne-refract)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [refract](https://github.com/timzifer/refract) charts in a [Fyne](https://fyne.io) app.
