@@ -71,6 +71,9 @@ func (c *Chart) refont() {
 	if err := c.target.SetFont(regular, bold, italic); err != nil {
 		c.renderr = err
 	}
+	// The tooltip is drawn by a rasterizer of its own, in the same typeface:
+	// a box in a different face from the axis beside it would read as a bug.
+	c.tip.setFont(regular, bold, italic)
 	c.w, c.h, c.dpr = 0, 0, 0
 	c.resize(size)
 }

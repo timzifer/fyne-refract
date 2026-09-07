@@ -21,6 +21,8 @@ type config struct {
 	min       fyne.Size
 	tooltip   bool
 	format    func(refract.Hit) string
+	content   func(refract.Hit) TooltipContent
+	style     TooltipStyle
 	theme     bool
 	font      bool
 	trackRows bool
@@ -60,13 +62,55 @@ func Tooltip(on bool) Option { return func(c *config) { c.tooltip = on } }
 
 // TooltipFormat replaces what the tooltip says. It is called for the mark
 // under the pointer; returning an empty string hides the tooltip for that
-// mark.
+// mark, and a string with newlines in it is drawn as several lines.
+//
+// It is the text-only shortcut: [TooltipContentFunc] and [TooltipWith] say how
+// the tooltip looks as well as what it says, and either of those replaces this
+// one.
 func TooltipFormat(fn func(refract.Hit) string) Option {
 	return func(c *config) {
 		if fn != nil {
 			c.format = fn
+			c.content = nil
 		}
 	}
+}
+
+// TooltipContentFunc replaces what the tooltip says and how it is drawn. It is
+// called for the mark under the pointer; a [TooltipContent] with an empty Text
+// hides the tooltip for that mark, and every styling field it leaves zero
+// falls back to [TooltipLook] and then to the Fyne theme.
+//
+// It replaces a [TooltipFormat] given before it.
+func TooltipContentFunc(fn func(refract.Hit) TooltipContent) Option {
+	return func(c *config) {
+		if fn != nil {
+			c.content = fn
+		}
+	}
+}
+
+// TooltipWith hands the tooltip to a [Tooltipper], for a caller whose
+// formatting has state to keep — units, a palette, a lookup table. It is
+// [TooltipContentFunc] for a type rather than a function.
+func TooltipWith(src Tooltipper) Option {
+	return func(c *config) {
+		if src != nil {
+			c.content = src.Tooltip
+		}
+	}
+}
+
+// TooltipLook sets what every tooltip looks like, for the fields it names: a
+// zero field keeps the Fyne theme's answer, and a [TooltipContent] returned by
+// [TooltipContentFunc] or [TooltipWith] overrides both for the hover it
+// belongs to.
+//
+// The tooltip is drawn by the same rasterizer as the chart's own labels rather
+// than by Fyne's text engine, so its glyph coverage is the chart's — the
+// symbols an axis can carry, ≤ ≥ ∞, a tooltip carries too.
+func TooltipLook(s TooltipStyle) Option {
+	return func(c *config) { c.style = s }
 }
 
 // DefaultTooltip is what a tooltip says unless [TooltipFormat] says otherwise:

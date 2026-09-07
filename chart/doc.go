@@ -11,6 +11,18 @@
 // and the native window use. What this package adds is the wiring, and a
 // tooltip, a theme that follows Fyne's, and a way to keep a stream moving.
 //
+// # Tooltips
+//
+// What a hover says is [TooltipFormat]; what it looks like is [TooltipLook];
+// and a caller who wants both per hover returns a [TooltipContent], from a
+// function given to [TooltipContentFunc] or from a [Tooltipper] given to
+// [TooltipWith].
+//
+// The box is drawn by the same rasterizer as the chart's own labels rather
+// than by Fyne's text engine, so it carries the symbols a chart reaches for —
+// Fyne draws U+FFFD for a character the theme font has no glyph for, and its
+// own theme font has none for U+2264.
+//
 // # Why this is not in package fynerefract
 //
 // Because wiring input is not drawing. A backend consumes IR and must not know
