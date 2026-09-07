@@ -245,6 +245,7 @@ func (c *Chart) close() error {
 		}
 		c.target = nil
 	}
+	c.tip.close()
 	return err
 }
 

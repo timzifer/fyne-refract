@@ -70,6 +70,7 @@ c := chart.New(p,
     chart.Follow(true, false),             // x tracks the data, y stays put
     chart.TrackRows(true),                 // Hit.Row on every hover
     chart.TooltipFormat(myFormat),         // or chart.Tooltip(false)
+    chart.TooltipLook(myTooltipStyle),     // colours, padding, type
     chart.ThemeFont(true),                 // the app's typeface; see below
     chart.WheelScale(4),                   // zoom per notch
 )
@@ -131,6 +132,50 @@ with history rather than a window wants.
 
 Pin the y axis with `scale.Domain`; one that rescales itself every frame makes
 two frames impossible to compare by eye.
+
+### Tooltips
+
+A hover shows the series and the values under the pointer. What it says is
+`chart.TooltipFormat`, and a label with newlines in it is drawn as several
+lines:
+
+```go
+chart.TooltipFormat(func(h refract.Hit) string {
+    return fmt.Sprintf("%s
+%.4g", h.Series, h.Y)
+})
+```
+
+How it looks is `chart.TooltipLook`, and a caller who wants both per hover
+returns a `chart.TooltipContent` instead — from a function, or from any type
+implementing `chart.Tooltipper`, which is where formatting with state of its
+own belongs:
+
+```go
+type reading struct{ unit string }
+
+func (r reading) Tooltip(h refract.Hit) chart.TooltipContent {
+    c := chart.TooltipContent{Text: fmt.Sprintf("%.1f %s", h.Y, r.unit)}
+    if h.Y < 0 {
+        c.Style.Text = color.NRGBA{R: 220, G: 60, B: 60, A: 255}
+    }
+    return c
+}
+
+c := chart.New(p, chart.TooltipWith(reading{unit: "°C"}))
+```
+
+Every field of a `chart.TooltipStyle` is optional: what a content leaves zero
+comes from `chart.TooltipLook`, and what that leaves zero comes from the Fyne
+theme.
+
+The box is drawn by the rasterizer rather than by Fyne's text engine, and that
+is the point. Fyne substitutes U+FFFD for a character the theme font has no
+glyph for — see `internal/painter/font.go` — and a theme carrying its own font
+resource gets no fallback at all, so `≤ ≥ ∞ ±` came out as `�` in the one place
+a chart puts numbers in front of a reader. Drawing the tooltip through the same
+rasterizer as the axis beside it gives it the same coverage and the same
+typeface, and brings multi-line labels with it.
 
 ## Pacing
 
