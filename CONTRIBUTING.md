@@ -1,0 +1,103 @@
+# Contributing
+
+## Layout
+
+Two modules, one repository.
+
+| Path | Module | Depends on |
+|---|---|---|
+| `.` | `github.com/timzifer/fyne-refract` | Fyne, refract, refract's raster backend |
+| `gpu` | `github.com/timzifer/fyne-refract/gpu` | the above plus refract's GPU tier, and through it wgpu |
+
+The split is not cosmetic. A nested module is excluded from its parent's module
+graph, so importing the widget cannot pull a GPU stack into a build that never
+asked for one. It is the arrangement refract makes for the same tier one level
+up.
+
+Inside the main module the split is refract's own, between `backend/window` and
+`backend/window/show`: `fynerefract` draws and `fynerefract/chart` steers. A
+backend must not know what a scale or a panel is, and everything in `chart` is
+about scales and panels. A change that needs to cross that line is a sign the
+seam is in the wrong place — say so rather than routing around it.
+
+## Everyday commands
+
+```sh
+# what CI runs
+gofmt -l .                                   # must print nothing
+go vet ./... && (cd gpu && go vet ./... && go vet -tags tierparity ./...)
+go build ./... && (cd gpu && go build ./...)
+go test ./... && (cd gpu && go test ./...)
+go test -race ./...
+
+# the library must not need cgo; only the demo does, because Fyne's desktop
+# driver does
+CGO_ENABLED=0 go build . ./chart
+
+# a chart in a window, by hand — the one thing CI cannot check
+go run ./cmd/demo
+```
+
+Developing against a refract checkout next door wants a workspace. It is not
+committed, and the `require` directives always name published tags:
+
+```sh
+go work init . ./gpu ../refract ../refract/backend/gg ../refract/backend/gg/gpu
+```
+
+## The measurements
+
+Several defaults in this repository are numbers rather than opinions, and the
+benchmarks are where they come from. Re-run them before changing one.
+
+```sh
+go test -run='^$' -bench=Frame -benchtime=25x .        # what a frame costs
+go test -run='^$' -bench=Drag  -benchtime=20x ./chart  # what the pacing saves
+go test -run='^$' -bench=Frame -benchtime=25x ./gpu    # the GPU tier
+```
+
+`fynerefract.DamageBudget`, `chart.Detail`, `chart.FrameInterval` and the
+choice to draw whole frames rather than partial ones each have a table in their
+doc comment. A change that moves one should move its table too.
+
+The GPU tier has a parity test behind a build tag, because it gives the device
+back halfway through and every benchmark after it would then measure the CPU
+while saying GPU:
+
+```sh
+cd gpu && go test -tags tierparity -run Parity ./...
+```
+
+## Tests
+
+They need no display: Fyne's test driver paints in software. What is asserted
+is what refract reports — the size the chart was laid out at, the domain after
+a zoom, the frames it painted — rather than how it looks. A test that scraped
+pixels to check an interaction would be testing the rasterizer.
+
+Where a test does read pixels it is because pixels are the subject: that the
+widget draws what the same plot exports, that a followed axis is drawn at all,
+that a font has the glyphs a chart uses.
+
+Write the test that would have caught the bug.
+`TestAFollowedAxisMovesWithEveryFrameRatherThanInSteps` exists because a
+sliding chart's axis once held still for half a tick and then jumped.
+
+## Things worth knowing before changing them
+
+**Drawing happens under `Target.Render`.** The rasterizer is single-goroutine
+and Fyne reads its buffer from the painter, which is the drawing goroutine on a
+desktop driver and is not under the test one. Resting on the two being the same
+is what the lock exists to avoid. `Render` is not reentrant, and `Plot.Live`
+and `Live.Close` both reach back into the target — so neither goes inside one.
+
+**Input is paced, and dropping an event loses nothing.** refract pans by the
+distance from the last position it was told about, and wheel deltas are summed,
+which is exact. Anything added to the gesture path has to keep that true.
+
+**A followed axis is released and un-niced.** Training accumulates and a linear
+axis rounds its domain outward; both are right for a still chart and wrong for
+a sliding window. See `chart.Follow`.
+
+**Partial repaints are off on purpose.** They cost six times what they save on
+the CPU rasterizer. The number is in `fynerefract.DamageBudget`.

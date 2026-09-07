@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Fyne's desktop driver is cgo and needs the X11 and GL headers. The tests
+  # themselves need no display: Fyne's test driver paints in software.
+  FYNE_DEPS: libgl1-mesa-dev xorg-dev libxkbcommon-dev
+
+jobs:
+  check:
+    name: build, vet and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            gpu/go.sum
+
+      - name: install the Fyne build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y $FYNE_DEPS
+
+      - name: gofmt
+        run: |
+          # Must print nothing. A file listed here is a file gofmt would change.
+          test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+      - name: vet
+        run: |
+          go vet ./...
+          (cd gpu && go vet ./... && go vet -tags tierparity ./...)
+
+      - name: build
+        run: |
+          go build ./...
+          (cd gpu && go build ./...)
+
+      - name: test
+        run: |
+          go test ./...
+          (cd gpu && go test ./...)
+
+      - name: test with the race detector
+        run: |
+          go test -race ./...
+          (cd gpu && go test -race ./...)
+
+  nocgo:
+    name: the library builds without cgo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      # The widget and its render target are pure Go. Only the demo needs cgo,
+      # because Fyne's desktop driver does — so this pins that the packages a
+      # library consumer imports do not.
+      - name: build without cgo
+        env:
+          CGO_ENABLED: "0"
+        run: go build . ./chart
+
+  tidy:
+    name: go.mod is tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            gpu/go.sum
+
+      - name: tidy
+        run: |
+          go mod tidy
+          (cd gpu && go mod tidy)
+          git diff --exit-code -- go.mod go.sum gpu/go.mod gpu/go.sum

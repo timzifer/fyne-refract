@@ -1,5 +1,10 @@
 # fyne-refract
 
+[![CI](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne-refract.svg)](https://pkg.go.dev/github.com/timzifer/fyne-refract)
+[![Go Report Card](https://goreportcard.com/badge/github.com/timzifer/fyne-refract)](https://goreportcard.com/report/github.com/timzifer/fyne-refract)
+[![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 [refract](https://github.com/timzifer/refract) charts in a [Fyne](https://fyne.io) app.
 
 ```go
@@ -249,12 +254,12 @@ The tests need no display: Fyne's software painter draws the widget, and what
 is asserted is what refract reports — the size it was laid out at, the domain
 after a zoom, the frames it painted — rather than how it looks.
 
-For development against a refract checkout next door, a `go.work` (uncommitted)
-does it:
+On Linux the demo needs the headers Fyne's desktop driver is built against:
+`libgl1-mesa-dev xorg-dev libxkbcommon-dev`. The library packages themselves
+build with `CGO_ENABLED=0`.
 
-```sh
-go work init . ../refract ../refract/backend/gg
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the layout, the benchmarks behind
+the defaults, and what to know before changing them.
 
 ## Versions
 
