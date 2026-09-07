@@ -1,9 +1,8 @@
-# Go source is line-ending sensitive to the tools rather than to the compiler:
-# gofmt reports a CRLF file as unformatted, so `gofmt -l .` on a Windows
-# checkout with core.autocrlf=true flags every file in the repository. Pinning
-# the working tree to LF makes the standard checks mean the same thing
-# everywhere.
-*.go text eol=lf
-go.mod text eol=lf
-go.sum text eol=lf
-*.md text eol=lf
+# Line endings are pinned to LF in the working tree, not only in the
+# repository. gofmt reports a CRLF file as unformatted, so on a Windows
+# checkout with core.autocrlf=true the check that has to print nothing printed
+# every file. Normalising the working tree makes the standard checks mean the
+# same thing everywhere.
+* text=auto eol=lf
+
+*.png binary
