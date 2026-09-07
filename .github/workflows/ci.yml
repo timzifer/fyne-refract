@@ -21,9 +21,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # "stable" rather than the version in go.mod, which names the minimum
+      # the module supports and not the toolchain to test on. Pinning to that
+      # minimum means testing on a release whose standard library has known
+      # vulnerabilities the day a patch lands; govulncheck below reports them,
+      # and reporting a stale toolchain to yourself is not the point.
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: stable
           cache-dependency-path: |
             go.sum
             gpu/go.sum
@@ -65,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: stable
           cache-dependency-path: go.sum
 
       # The widget and its render target are pure Go. Only the demo needs cgo,
@@ -76,6 +81,47 @@ jobs:
           CGO_ENABLED: "0"
         run: go build . ./chart
 
+  minimum:
+    name: builds on the Go version go.mod names
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          # The other jobs test the toolchain people will actually run. This
+          # one holds the module to the version it claims to need, so that the
+          # go directive is a promise rather than a guess.
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y $FYNE_DEPS
+      - run: go build ./...
+
+  vuln:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: |
+            go.sum
+            gpu/go.sum
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y $FYNE_DEPS
+
+      # govulncheck reports what an advisory means here rather than that one
+      # exists: it follows the call graph and names the vulnerabilities this
+      # code can actually reach. That is the question a version bump cannot
+      # answer, and the reason this repository does not take routine ones.
+      - name: govulncheck
+        run: |
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+          (cd gpu && go run golang.org/x/vuln/cmd/govulncheck@latest ./...)
+
   tidy:
     name: go.mod is tidy
     runs-on: ubuntu-latest
@@ -83,7 +129,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: stable
           cache-dependency-path: |
             go.sum
             gpu/go.sum

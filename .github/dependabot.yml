@@ -1,0 +1,25 @@
+# GitHub Actions only, and deliberately not Go modules.
+#
+# The Go dependencies here are pinned to an exact set on purpose: this bridge
+# is validated against one release of refract, one of its raster backend and
+# one of Fyne, and says which — the same rule refract applies to gg one level
+# up. A routine version bump is not a small change to that; it is the thing
+# each release exists to decide, and it needs a person to run the demo and
+# look, which no check here can do. So bumps arrive as deliberate commits.
+#
+# What answers the security question instead is the govulncheck job in ci.yml,
+# which reports the advisories this code can actually reach rather than every
+# advisory that exists anywhere in the graph. Dependabot's security alerts are
+# on for the same reason and cost nothing: they speak only when there is an
+# advisory.
+#
+# Actions are the opposite case. They go stale quietly, a bump carries no
+# behaviour this repository depends on, and CI proves it.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
