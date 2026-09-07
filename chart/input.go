@@ -1,0 +1,215 @@
+package chart
+
+import (
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
+)
+
+// The pointer. Every handler hands the position to refract.Input and then asks
+// for a frame; Live paints nothing when the frame is identical to the last, so
+// a hover that found the same mark twice costs nothing.
+//
+// Both Hoverable and Draggable are implemented because Fyne splits the pointer
+// between them: while a button is held on a draggable object, MouseMoved stops
+// firing and Dragged fires instead. refract.Input wants one stream of
+// positions and works out for itself whether it is a hover or a pan.
+
+// MouseIn is called by Fyne. It is not part of the API.
+func (c *Chart) MouseIn(ev *desktop.MouseEvent) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.moved(ev.Position)
+}
+
+// MouseMoved is called by Fyne. It is not part of the API.
+func (c *Chart) MouseMoved(ev *desktop.MouseEvent) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.moved(ev.Position)
+}
+
+// MouseOut is called by Fyne. It is not part of the API.
+func (c *Chart) MouseOut() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.in == nil {
+		return
+	}
+	c.settle()
+	c.dragged = false
+	_ = c.in.Leave()
+	c.present()
+	c.sharpen()
+}
+
+// MouseDown is called by Fyne. It is not part of the API.
+func (c *Chart) MouseDown(ev *desktop.MouseEvent) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.in == nil || ev.Button != desktop.MouseButtonPrimary {
+		return
+	}
+	c.drag, c.dragged = ev.Position, true
+	if c.steers() {
+		// A drag is about to start. Drawing it coarse is what keeps it
+		// following the pointer; MouseUp and DragEnd put it back.
+		c.coarsen()
+	}
+	_ = c.in.Down(float64(ev.Position.X), float64(ev.Position.Y))
+}
+
+// MouseUp is called by Fyne. It is not part of the API.
+func (c *Chart) MouseUp(ev *desktop.MouseEvent) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.in == nil || ev.Button != desktop.MouseButtonPrimary {
+		return
+	}
+	// A gesture that has ended has a last position nobody has drawn yet.
+	c.settle()
+	c.drag, c.dragged = ev.Position, false
+	_ = c.in.Up(float64(ev.Position.X), float64(ev.Position.Y))
+	c.present()
+	c.sharpen()
+}
+
+// Dragged is called by Fyne. It is not part of the API.
+func (c *Chart) Dragged(ev *fyne.DragEvent) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.in == nil {
+		return
+	}
+	c.drag, c.dragged = ev.Position, true
+	c.moved(ev.Position)
+}
+
+// DragEnd is called by Fyne. It is not part of the API.
+//
+// Fyne reports the end of a drag without a position, so the last one seen is
+// what the release is reported at — which is where the pointer is.
+func (c *Chart) DragEnd() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.in == nil || !c.dragged {
+		return
+	}
+	c.settle()
+	c.dragged = false
+	_ = c.in.Up(float64(c.drag.X), float64(c.drag.Y))
+	c.present()
+	c.sharpen()
+}
+
+// Scrolled is called by Fyne. It is not part of the API.
+//
+// Fyne counts a wheel notch in its own units and upwards; refract counts it in
+// the browser's pixels and downwards, where a positive delta pushes the chart
+// away and zooms out. [WheelScale] is the conversion.
+func (c *Chart) Scrolled(ev *fyne.ScrollEvent) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.in == nil {
+		return
+	}
+	if !c.steers() {
+		// A chart that follows its data is not zoomed. See Chart.steers.
+		return
+	}
+	delta := -float64(ev.Scrolled.DY) * c.cfg.wheel
+	if delta == 0 {
+		return
+	}
+	// Notches that arrive faster than they can be drawn are added up rather
+	// than dropped: a wheel factor is exp(delta/1000), so applying the sum is
+	// applying each of them in turn.
+	c.wheel += delta
+	c.wheelAt = ev.Position
+	// A wheel has no end to report, so the coarse frames are timed out rather
+	// than switched off by an event.
+	c.coarsen()
+	c.pace(c.zoom)
+	c.armSharpen()
+}
+
+// zoom applies every wheel notch that has arrived since the last frame.
+func (c *Chart) zoom() {
+	delta := c.wheel
+	c.wheel = 0
+	if c.in == nil || delta == 0 {
+		return
+	}
+	wheel := func() error { return c.in.Wheel(float64(c.wheelAt.X), float64(c.wheelAt.Y), delta) }
+	if err := c.target.Render(wheel); err != nil {
+		c.renderr = err
+		return
+	}
+	c.present()
+}
+
+// DoubleTapped is called by Fyne. It is not part of the API.
+func (c *Chart) DoubleTapped(*fyne.PointEvent) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.in == nil {
+		return
+	}
+	c.steered = false
+	c.sharpen()
+	if err := c.target.Render(c.in.DoubleClick); err != nil {
+		c.renderr = err
+		return
+	}
+	c.present()
+}
+
+// Cursor is called by Fyne. It is not part of the API.
+func (c *Chart) Cursor() desktop.Cursor { return c.cfg.cursor }
+
+// moved is the one path a pointer position takes into the chart. Input decides
+// whether it is a hover or a pan.
+//
+// A hover is not paced: it reads the hit index and draws nothing, so it costs
+// microseconds and should feel immediate. A pan is paced, because it redraws —
+// and dropping one loses nothing, since Input pans by the distance from the
+// last position it was told about, so the next one covers the whole way.
+//
+// A press that has not yet moved past the click slop is not paced either. Those
+// positions draw nothing — refract is still deciding whether this is a click —
+// and dropping one would fold the slop into the first pan, moving the chart a
+// few pixels further than the same drag would move it unpaced.
+func (c *Chart) moved(pos fyne.Position) {
+	if c.in == nil {
+		return
+	}
+	if c.dragged && !c.steers() {
+		// A chart that follows its data is not dragged. See Chart.steers.
+		return
+	}
+	if !c.dragged || !c.in.Dragging() {
+		c.hover(pos)
+		return
+	}
+	c.pace(func() { c.hover(pos) })
+}
+
+func (c *Chart) hover(pos fyne.Position) {
+	if c.in == nil {
+		return
+	}
+	// A move can pan, and a pan draws, so it holds the surface like any other
+	// frame does.
+	move := func() error { return c.in.Move(float64(pos.X), float64(pos.Y)) }
+	if err := c.target.Render(move); err != nil {
+		c.renderr = err
+		return
+	}
+	c.present()
+}
