@@ -36,7 +36,6 @@ func defaults() config {
 		tooltip: true,
 		format:  DefaultTooltip,
 		theme:   true,
-		font:    true,
 		wheel:   DefaultWheelScale,
 		cursor:  desktop.CrosshairCursor,
 	}
@@ -178,10 +177,24 @@ func FollowPause(on bool) Option { return func(c *config) { c.pause = on } }
 func FollowTheme(on bool) Option { return func(c *config) { c.theme = on } }
 
 // ThemeFont draws the chart's labels in the application's typeface, read from
-// the Fyne theme. It is on by default.
+// the Fyne theme. It is off by default, and the reason is worth knowing before
+// turning it on.
 //
-// Turn it off to keep the fonts every other refract raster uses, which is what
-// makes a chart on screen comparable pixel for pixel with an exported PNG.
+// Fyne renders text through a shaper that falls back: a character its theme
+// font has no glyph for is drawn from another font, so the label appears. The
+// rasterizer that draws a chart is handed one font and has no fallback, so the
+// same character is drawn as nothing at all — silently, leaving a gap.
+//
+// That is not hypothetical. Fyne's own theme font is NotoSans-Regular, which
+// has no glyph for U+2264, U+2265 or U+221E: a chart titled "30° ≤ x" loses
+// the ≤ and keeps the degree sign, and an axis labelled in ∞ loses that. Those
+// are exactly the characters a chart reaches for.
+//
+// So the default is the fonts every other refract raster uses. They cover more,
+// and they are what makes a chart on screen comparable pixel for pixel with the
+// PNG the same plot exports. Turn this on when the chart's labels are plain
+// enough for the theme's font to carry, and matching the application's
+// typeface matters more.
 func ThemeFont(on bool) Option { return func(c *config) { c.font = on } }
 
 // TrackRows records which source row is behind each mark, so that a hover can
