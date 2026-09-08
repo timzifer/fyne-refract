@@ -307,7 +307,7 @@ the defaults, and what to know before changing them.
 
 ## Versions
 
-`fyne.io/fyne/v2` v2.7.3, `github.com/timzifer/refract` v1.0.0 and its raster
+`fyne.io/fyne/v2` v2.7.3, `github.com/timzifer/refract` v1.7.0 and its raster
 backend at the same tag, pinned exactly — a release of this bridge is validated
 against one release of each and says which.
 

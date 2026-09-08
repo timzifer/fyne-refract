@@ -236,6 +236,16 @@ func (t *tooltip) show(ev refract.Event) {
 		t.hide()
 		return
 	}
+	if ev.Hit.Kind.Guides() {
+		// A hit on a legend row, a colourbar or a size key is not a hit on
+		// data. Since refract v1.7 a hover in the margins finds those, and
+		// they carry no X and no Y — a tooltip that described one would read
+		// "x 0, y 0" beside a series name, which is a lie about where the
+		// pointer is. A caller who does want to say something about a guide
+		// handles [refract.Hover] and reads [refract.Hit.Kind] themselves.
+		t.hide()
+		return
+	}
 	content := t.c.tipContent(ev.Hit)
 	if content.Text == "" {
 		t.hide()
