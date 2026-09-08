@@ -87,8 +87,25 @@ type Chart struct {
 
 	tip *tooltip
 
+	// The overlay layer. overlay is what a caller installed and brush is the
+	// rubber band of a [DragMode] drag; ov composes the two and is what refract
+	// is actually given. banding says a band is being dragged out right now,
+	// which is the only time the brush paints — an installed overlay makes
+	// every hover redraw (see [refract.Input.Move]), so a chart with neither
+	// has none installed and pays nothing.
+	overlay refract.Overlay
+	brush   *refract.Brush
+	ov      *overlays
+	banding bool
+	onView  func(refract.View)
+
 	stream *data.Stream
 	stopFn func()
+
+	// transFn stops the transition being driven, if there is one. It is not
+	// stopFn: a live chart on a ticker and a transition over it are two
+	// animations, and starting one must not silently end the other.
+	transFn func()
 
 	// themed remembers what the chart was last built for, so that a settings
 	// change that touched neither is not a rebuild.
@@ -123,6 +140,13 @@ func New(p *refract.Plot, opts ...Option) *Chart {
 	c := &Chart{plot: p, cfg: defaults(), dpr: 1}
 	for _, o := range opts {
 		o(&c.cfg)
+	}
+	c.overlay, c.ov = c.cfg.overlay, &overlays{}
+	c.brush = c.cfg.brush
+	if !c.cfg.brushSet {
+		// The default band: refract's own look, which reads against either
+		// theme because it is drawn in the theme's own axis colour.
+		c.brush = &refract.Brush{}
 	}
 	c.ExtendBaseWidget(c)
 	return c
@@ -206,6 +230,7 @@ func (c *Chart) Autoscale() error {
 		return err
 	}
 	c.present()
+	c.viewChanged()
 	return nil
 }
 
@@ -224,6 +249,10 @@ func (c *Chart) close() error {
 	if c.stopFn != nil {
 		c.stopFn()
 		c.stopFn = nil
+	}
+	if c.transFn != nil {
+		c.transFn()
+		c.transFn = nil
 	}
 	if c.timer != nil {
 		c.timer.Stop()
@@ -278,8 +307,9 @@ func (c *Chart) resize(size fyne.Size) {
 			return
 		}
 		c.renderr = nil
-		c.live = live.TrackRows(c.cfg.trackRows)
-		c.in = c.live.Input()
+		c.live = live.TrackRows(c.tracksRows())
+		c.in = c.live.Input().Drag(c.cfg.drag)
+		c.endBand()
 		c.hookEvents()
 		c.w, c.h = c.plot.Size()
 	}
@@ -476,6 +506,30 @@ func (c *Chart) follows() bool {
 // anyway, without the flicker.
 func (c *Chart) steers() bool { return !c.follows() || c.cfg.pause }
 
+// tracksRows reports whether the chart should record which source row is
+// behind each mark.
+//
+// [TrackRows] asks for it, and so does a drag that selects: a selection is
+// [refract.Live.Select], which reads the rows out of the hit index, and an
+// index that was not tracking them holds none — so a chart in
+// [refract.DragSelects] that was not also told to track rows would drag out a
+// rectangle and report nothing under it. Turning it on for the mode that needs
+// it is not a default anybody would want overridden.
+func (c *Chart) tracksRows() bool {
+	return c.cfg.trackRows || c.cfg.drag == refract.DragSelects
+}
+
+// drags reports whether a press starts a gesture the chart will act on.
+//
+// It is [Chart.steers] for every drag that moves the view, and true regardless
+// for [refract.DragSelects], which moves nothing: a chart following a stream
+// still has rows a reader may want to mark out, and refusing the gesture there
+// would be refusing it for a reason that does not apply. A drag that zooms to
+// its band does move the view, and is refused with the pan.
+func (c *Chart) drags() bool {
+	return c.cfg.drag == refract.DragSelects || c.steers()
+}
+
 // releaseFollowed forgets what the followed axes were trained on, so that the
 // frame about to be drawn establishes their domains from the rows the chart
 // holds now rather than from every row it has ever held. See [Follow].
@@ -517,8 +571,20 @@ func (c *Chart) hookEvents() {
 	// A reader who has grabbed the chart has taken it off the follow: see
 	// [Follow]. Both handlers are registered whether or not there is a
 	// tooltip, because following is not a tooltip's business.
-	c.plot.On(refract.Zoom, func(refract.Event) { c.steered = true })
-	c.plot.On(refract.Pan, func(refract.Event) { c.steered = true })
+	c.plot.On(refract.Zoom, func(refract.Event) { c.steered = true; c.viewChanged() })
+	c.plot.On(refract.Pan, func(refract.Event) { c.steered = true; c.viewChanged() })
+	// A click on a legend row, when the chart was asked to wire one. It runs
+	// inside the surface the release already holds — see [Chart.MouseUp] — so
+	// the redraw Live.Toggle does needs no hold of its own, and it must not
+	// take the chart's lock, which the same call already has.
+	c.plot.On(refract.Click, func(ev refract.Event) {
+		if !c.cfg.legendToggle || c.live == nil || ev.Hit.Kind != refract.LegendRow {
+			return
+		}
+		if err := c.live.Toggle(ev.Hit.Layer); err != nil {
+			c.renderr = err
+		}
+	})
 	if !c.cfg.tooltip {
 		return
 	}

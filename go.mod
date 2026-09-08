@@ -7,8 +7,8 @@ go 1.25.0
 // one of the rasterizer, and says which.
 require (
 	fyne.io/fyne/v2 v2.7.3
-	github.com/timzifer/refract v1.0.0
-	github.com/timzifer/refract/backend/gg v1.0.2
+	github.com/timzifer/refract v1.7.0
+	github.com/timzifer/refract/backend/gg v1.7.0
 )
 
 require (

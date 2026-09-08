@@ -38,7 +38,24 @@ func (c *Chart) MouseOut() {
 	}
 	c.settle()
 	c.dragged = false
-	_ = c.in.Leave()
+	banded := c.banding
+	c.endBand()
+	leave := func() error {
+		if err := c.in.Leave(); err != nil {
+			return err
+		}
+		if banded {
+			// Leave cancels a drag without drawing, so the band that was on
+			// screen when the pointer left would stay there. Only then: a
+			// pointer leaving a chart nobody was dragging has changed nothing,
+			// and a frame drawn to prove it is a full render pass per exit.
+			return c.live.Draw()
+		}
+		return nil
+	}
+	if err := c.target.Render(leave); err != nil {
+		c.renderr = err
+	}
 	c.present()
 	c.sharpen()
 }
@@ -52,12 +69,59 @@ func (c *Chart) MouseDown(ev *desktop.MouseEvent) {
 		return
 	}
 	c.drag, c.dragged = ev.Position, true
-	if c.steers() {
+	if c.drags() {
 		// A drag is about to start. Drawing it coarse is what keeps it
 		// following the pointer; MouseUp and DragEnd put it back.
 		c.coarsen()
 	}
-	_ = c.in.Down(float64(ev.Position.X), float64(ev.Position.Y))
+	if c.bands() && c.drags() {
+		// The band is installed for the length of the drag and taken away
+		// again on release, because an installed overlay makes every hover
+		// redraw. See Chart.syncOverlay.
+		c.banding = true
+		c.syncOverlay()
+	}
+	c.down(ev.Position)
+}
+
+// down reports the press to refract, holding the surface. The lock is held by
+// the caller.
+func (c *Chart) down(pos fyne.Position) {
+	press := func() error { return c.in.Down(float64(pos.X), float64(pos.Y)) }
+	if err := c.target.Render(press); err != nil {
+		c.renderr = err
+	}
+}
+
+// up reports the release to refract and shows what it drew.
+//
+// It goes through the surface because a release is the one event that can draw
+// several different things: a rubber band that zooms to itself, a click on a
+// legend row that hides a layer, and — when the band has just been taken away —
+// the frame that no longer has it in. The lock is held by the caller.
+func (c *Chart) up(pos fyne.Position) {
+	banded := c.banding
+	// Before the release, so that nothing the release draws still carries the
+	// band the reader has just let go of.
+	c.endBand()
+	release := func() error {
+		if err := c.in.Up(float64(pos.X), float64(pos.Y)); err != nil {
+			return err
+		}
+		if banded {
+			// A selection draws nothing of its own — it answers a question —
+			// so the band would still be on screen. A zoom to the band has
+			// already drawn and this frame is identical to it, which paints
+			// nothing.
+			return c.live.Draw()
+		}
+		return nil
+	}
+	if err := c.target.Render(release); err != nil {
+		c.renderr = err
+		return
+	}
+	c.present()
 }
 
 // MouseUp is called by Fyne. It is not part of the API.
@@ -71,8 +135,7 @@ func (c *Chart) MouseUp(ev *desktop.MouseEvent) {
 	// A gesture that has ended has a last position nobody has drawn yet.
 	c.settle()
 	c.drag, c.dragged = ev.Position, false
-	_ = c.in.Up(float64(ev.Position.X), float64(ev.Position.Y))
-	c.present()
+	c.up(ev.Position)
 	c.sharpen()
 }
 
@@ -101,8 +164,7 @@ func (c *Chart) DragEnd() {
 	}
 	c.settle()
 	c.dragged = false
-	_ = c.in.Up(float64(c.drag.X), float64(c.drag.Y))
-	c.present()
+	c.up(c.drag)
 	c.sharpen()
 }
 
@@ -163,11 +225,13 @@ func (c *Chart) DoubleTapped(*fyne.PointEvent) {
 	}
 	c.steered = false
 	c.sharpen()
+	c.endBand()
 	if err := c.target.Render(c.in.DoubleClick); err != nil {
 		c.renderr = err
 		return
 	}
 	c.present()
+	c.viewChanged()
 }
 
 // Cursor is called by Fyne. It is not part of the API.
@@ -189,8 +253,8 @@ func (c *Chart) moved(pos fyne.Position) {
 	if c.in == nil {
 		return
 	}
-	if c.dragged && !c.steers() {
-		// A chart that follows its data is not dragged. See Chart.steers.
+	if c.dragged && !c.drags() {
+		// A chart that follows its data is not panned. See Chart.drags.
 		return
 	}
 	if !c.dragged || !c.in.Dragging() {
@@ -206,7 +270,17 @@ func (c *Chart) hover(pos fyne.Position) {
 	}
 	// A move can pan, and a pan draws, so it holds the surface like any other
 	// frame does.
-	move := func() error { return c.in.Move(float64(pos.X), float64(pos.Y)) }
+	move := func() error {
+		if err := c.in.Move(float64(pos.X), float64(pos.Y)); err != nil {
+			return err
+		}
+		// A rubber band moves nothing, so refract draws nothing while one is
+		// being dragged out: the feedback is the surface's, and this is it.
+		if c.band() {
+			return c.live.Draw()
+		}
+		return nil
+	}
 	if err := c.target.Render(move); err != nil {
 		c.renderr = err
 		return

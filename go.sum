@@ -77,10 +77,10 @@ github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef h1:Ch6Q+AZUxDBCVqd
 github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef/go.mod h1:nXTWP6+gD5+LUJ8krVhhoeHjvHTutPxMYl5SvkcnJNE=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/timzifer/refract v1.0.0 h1:K1mUoAnh4oTiPvuQEiNUBM8r/WwvyNwCQqhd9dHV4sI=
-github.com/timzifer/refract v1.0.0/go.mod h1:Jwur80fZ3oDgHMbz+zbYOZX/2aICv+bNQ9NyQlKCfMU=
-github.com/timzifer/refract/backend/gg v1.0.2 h1:hzQfwMJiqM+Pil1dis1UlsTDYA9+TGngaf1n5Xe0DrQ=
-github.com/timzifer/refract/backend/gg v1.0.2/go.mod h1:FwDxNpnQoybNfvMASlqNcqWGbYikfUZBUJCqnbPU7Po=
+github.com/timzifer/refract v1.7.0 h1:FF8IrEo+qgX2nN7R9mOdKfargb2Gc8c7TcAhL9WL60I=
+github.com/timzifer/refract v1.7.0/go.mod h1:Jwur80fZ3oDgHMbz+zbYOZX/2aICv+bNQ9NyQlKCfMU=
+github.com/timzifer/refract/backend/gg v1.7.0 h1:lXpAzeY6Ei7ug2wNkebZz8bwueuf6sZysSl8Y4SKcxA=
+github.com/timzifer/refract/backend/gg v1.7.0/go.mod h1:O4JNpNv0tzwcV4DX/KrCl6Uw19p/U7l1W+HlSaXuWzM=
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=
 github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 golang.org/x/image v0.45.0 h1:FMb1nTbH5H9vF55SriQHgFw5GnNL9Jg6L25BwXKzhB0=

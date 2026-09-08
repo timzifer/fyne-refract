@@ -12,6 +12,13 @@
 // repainted on a timer. It hovers, and it does not drag or zoom — its axis
 // follows the window, and a sliding window has nothing behind its tip to pan
 // to. chart.FollowPause is the other choice; see the Follow tab's comment.
+//
+// The third is the interaction refract grew in v1.7 and this widget wires:
+// two charts that move together, a legend whose rows can be clicked off, a
+// crosshair painted over the finished chart, and a drag that marks out rows
+// instead of panning. None of it is on by default — a legend that always
+// toggled would be wrong for one that selects rather than filters — so this
+// tab is also the list of the switches.
 package main
 
 import (
@@ -47,6 +54,7 @@ func main() {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Signal", signalTab()),
 		liveItem,
+		container.NewTabItem("Interact", interactTab()),
 	)
 	// A chart nobody is looking at should not be drawn. Both tabs share one
 	// goroutine — Fyne's — so a hidden chart repainting twenty times a second
@@ -117,6 +125,86 @@ func signalTab() fyne.CanvasObject {
 	return container.NewBorder(nil, container.NewVBox(status, controls), nil, nil, c)
 }
 
+// interactTab is two charts of the same table, linked, with everything a
+// pointer can be made to mean switched on.
+func interactTab() fyne.CanvasObject {
+	src := signal(2000)
+
+	// Two charts of the same rows, so that a view handed from one to the other
+	// means the same thing in both.
+	top := chart.New(plotOf(src, "Signal — drag to select"),
+		chart.LegendToggle(true),
+		chart.DragMode(refract.DragSelects),
+	)
+	bottom := chart.New(plotOf(src, "The same rows, linked"),
+		chart.LegendToggle(true),
+	)
+
+	// The link, one line each way. It does not loop: SetView is not a reader
+	// moving anything, and reports nothing back.
+	top.OnViewChange(func(v refract.View) { _ = bottom.SetView(v) })
+	bottom.OnViewChange(func(v refract.View) { _ = top.SetView(v) })
+
+	// A crosshair is the cheapest thing a reader can be given for "which value
+	// is this". It is installed once and then moved: the overlay is a pointer
+	// whose fields the handler writes.
+	cross := &refract.Crosshair{}
+	top.Overlay(cross)
+
+	status := widget.NewLabel("Drag a rectangle over the top chart. Click a legend row to hide a series.")
+	top.Plot().On(refract.Hover, func(ev refract.Event) {
+		cross.At, cross.Show = ev.Hit.At, ev.Found && !ev.Hit.Kind.Guides()
+	})
+	// A selection is one event per layer under the rectangle. What it means is
+	// the caller's — refract counts the rows and stops there.
+	top.Plot().On(refract.Select, func(ev refract.Event) {
+		status.SetText(fmt.Sprintf("%s: %d rows selected", ev.Hit.Series, len(ev.Rows)))
+	})
+
+	mode := widget.NewSelect([]string{"Select", "Zoom to band", "Pan"}, func(s string) {
+		switch s {
+		case "Select":
+			top.SetDragMode(refract.DragSelects)
+		case "Zoom to band":
+			top.SetDragMode(refract.DragZooms)
+		default:
+			top.SetDragMode(refract.DragPans)
+		}
+	})
+	mode.SetSelected("Select")
+
+	show := widget.NewButton("Show every series", func() {
+		if err := top.ShowAllLayers(); err != nil {
+			status.SetText("showing: " + err.Error())
+			return
+		}
+		_ = bottom.ShowAllLayers()
+	})
+
+	controls := container.NewHBox(widget.NewLabel("Drag:"), mode, show)
+	charts := container.NewGridWithRows(2, top, bottom)
+	return container.NewBorder(nil, container.NewVBox(status, controls), nil, nil, charts)
+}
+
+// plotOf is two named series over one table, which is what gives the chart a
+// legend to click.
+func plotOf(src refract.Source, title string) *refract.Plot {
+	p := refract.New(
+		refract.Responsive(true),
+		refract.Size(900, 240),
+		refract.Title(title),
+		refract.XTitle("t"),
+		refract.YTitle("amplitude"),
+	)
+	p.Add(
+		geom.Line(src, geom.X("t"), geom.Y("signal"),
+			geom.Color(palette.SkyBlue), geom.Label("signal")),
+		geom.Line(src, geom.X("t"), geom.Y("carrier"),
+			geom.Color(palette.Vermilion), geom.Label("carrier")),
+	)
+	return p
+}
+
 // liveTab is a stream and a chart. It returns the chart and a function that
 // starts repainting it, so that the caller can stop when the tab is hidden.
 func liveTab() (fyne.CanvasObject, func() (stop func())) {
@@ -185,10 +273,12 @@ func throughput(t float64) float64 {
 func signal(n int) refract.Source {
 	x := make([]float64, n)
 	y := make([]float64, n)
+	carrier := make([]float64, n)
 	for i := range n {
 		t := float64(i) / 40
 		x[i] = t
 		y[i] = math.Sin(t) + 0.35*math.Sin(7.3*t) + 0.12*math.Sin(31*t)
+		carrier[i] = 0.8 * math.Cos(t/1.7)
 	}
-	return refract.Float64Columns(map[string][]float64{"t": x, "signal": y})
+	return refract.Float64Columns(map[string][]float64{"t": x, "signal": y, "carrier": carrier})
 }
