@@ -28,6 +28,12 @@ type config struct {
 	trackRows bool
 	wheel     float64
 	cursor    desktop.Cursor
+
+	drag         refract.Drag
+	brush        *refract.Brush
+	brushSet     bool
+	legendToggle bool
+	overlay      refract.Overlay
 }
 
 func defaults() config {
@@ -265,3 +271,62 @@ func Cursor(cur desktop.Cursor) Option {
 		}
 	}
 }
+
+// DragMode sets what dragging the chart does: pan the view, drag out a
+// rectangle and select the rows under it, or drag one out and zoom to it. The
+// default is [refract.DragPans].
+//
+// The band a rubber-band drag paints is the chart's — refract draws nothing
+// while one is being dragged out, because what the feedback should look like
+// is the surface's business. See [Brush] for the look of it, and [Chart.Brush]
+// to turn it off.
+//
+// What a selection *means* is the caller's. refract fires [refract.Select] on
+// release with one event per layer under the rectangle, and the chart adds
+// nothing to it:
+//
+//	c := chart.New(p, chart.DragMode(refract.DragSelects))
+//	c.Plot().On(refract.Select, func(ev refract.Event) {
+//		fmt.Println(ev.Hit.Series, len(ev.Rows))
+//	})
+//
+// A chart that follows its data is still selectable and still zoomable to a
+// rectangle. Only panning fights the follow — see [Follow] — and only panning
+// is refused.
+func DragMode(m refract.Drag) Option {
+	return func(c *config) { c.drag = m }
+}
+
+// Brush sets what the rubber band of a [DragMode] drag looks like. Passing nil
+// draws no band at all; the default is [refract.Brush]'s own look, which is the
+// theme's axis colour filled at a tenth opacity and stroked at a half.
+//
+// The brush is a pointer the chart moves — its rectangle is written before
+// every frame of the drag — so a caller styling one hands over a value it does
+// not then keep writing to.
+func Brush(br *refract.Brush) Option {
+	return func(c *config) { c.brush, c.brushSet = br, true }
+}
+
+// LegendToggle makes a click on a legend row hide the layer it stands for, and
+// a second click show it again. It is off by default.
+//
+// refract deliberately does not wire this itself — a legend that always
+// toggled would be wrong for one that selects rather than filters — so this is
+// the wiring, offered as a switch because for a widget it is the common case.
+// A caller wanting something else leaves it off and handles [refract.Click]
+// with a hit of kind [refract.LegendRow].
+//
+// Hiding does not move the axes: a toggle is a reading aid, and an axis that
+// rescaled on every click would make the two readings incomparable. See
+// [Chart.HideLayer].
+func LegendToggle(on bool) Option { return func(c *config) { c.legendToggle = on } }
+
+// Overlay installs something to paint over the chart — a crosshair, a
+// highlight, a box of text — from construction. It is [Chart.Overlay] for a
+// chart that has not been laid out yet, and the same overlay survives the
+// rebuild a theme change causes.
+//
+// The chart composes it with the rubber band of a [DragMode] drag, so a chart
+// with a crosshair and a selection band shows both.
+func Overlay(o refract.Overlay) Option { return func(c *config) { c.overlay = o } }

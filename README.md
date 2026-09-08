@@ -69,6 +69,10 @@ c := chart.New(p,
     chart.FrameInterval(0),                // 0 is adaptive, <0 draws every event
     chart.Follow(true, false),             // x tracks the data, y stays put
     chart.TrackRows(true),                 // Hit.Row on every hover
+    chart.DragMode(refract.DragSelects),   // drag marks out a rectangle
+    chart.Brush(&refract.Brush{}),         // what that rectangle looks like
+    chart.LegendToggle(true),              // click a legend row to hide a series
+    chart.Overlay(&refract.Crosshair{}),   // paint over the finished chart
     chart.TooltipFormat(myFormat),         // or chart.Tooltip(false)
     chart.TooltipLook(myTooltipStyle),     // colours, padding, type
     chart.ThemeFont(true),                 // the app's typeface; see below
@@ -85,6 +89,86 @@ p.On(refract.Hover, func(ev refract.Event) {
     }
 })
 ```
+
+### Selecting, hiding, linking
+
+refract wires none of these itself, and says why in its ADRs 0045 and 0047: a
+legend that always toggled, a crosshair nobody asked for and two charts that
+always moved together would each be wrong somewhere. The widget offers them as
+switches because for a widget they are the common case, and every one of them
+is off by default.
+
+A drag can mark out a rectangle instead of panning. The rows under it arrive as
+ordinary refract events, one per layer, and the chart draws the band — refract
+paints nothing while one is being dragged out, because what the feedback looks
+like is the surface's business:
+
+```go
+c := chart.New(p, chart.DragMode(refract.DragSelects))
+c.Plot().On(refract.Select, func(ev refract.Event) {
+    fmt.Println(ev.Hit.Series, len(ev.Rows))
+})
+```
+
+Selecting turns row tracking on by itself: a selection reads rows out of the
+hit index, and an index that was not tracking them holds none.
+
+A click on a legend row can hide the layer it stands for. The axes deliberately
+do not move — a toggle is a reading aid, and an axis that rescaled on every
+click would make the two readings incomparable:
+
+```go
+c := chart.New(p, chart.LegendToggle(true))
+c.HideLayer(1, true)   // or ToggleLayer, ShowAllLayers, LayerHidden
+```
+
+Two charts are linked by handing one's view to the other, one line each way.
+That does not loop: `SetView` is not a reader moving anything and reports
+nothing back.
+
+```go
+left.OnViewChange(func(v refract.View) { right.SetView(v) })
+right.OnViewChange(func(v refract.View) { left.SetView(v) })
+```
+
+### Overlays
+
+An overlay paints over a finished chart — a crosshair, rings around a set of
+points, a box of text. It is installed once and then moved, because it is a
+pointer to a struct whose fields a handler writes:
+
+```go
+cross := &refract.Crosshair{}
+c.Overlay(cross)
+c.Plot().On(refract.Hover, func(ev refract.Event) {
+    cross.At, cross.Show = ev.Hit.At, ev.Found
+})
+```
+
+A hover redraws the chart while an overlay is installed and does not while one
+is not, so a chart with no use for one should not install a do-nothing overlay
+to keep the code uniform. The chart composes the caller's overlay with the band
+of a selection drag, so a chart with both shows both.
+
+### Transitions
+
+A transition is refract's — a keyed join between two tables, blended in data
+space — and the clock is the host's. The widget is the clock:
+
+```go
+tw, _ := data.NewTween(before, after, "lang", data.Hold("slot"))
+tr, _ := c.Transition(tw)
+c.Play(tr.Over(400*time.Millisecond).Ease(refract.EaseOut), func() {
+    fmt.Println("arrived")
+})
+```
+
+Frames are advanced by the wall clock on Fyne's goroutine, so a transition of
+four hundred milliseconds takes four hundred milliseconds on a machine that
+cannot draw sixty frames in that time: it skips the frames it cannot afford
+instead of running long. A transition being played belongs to the goroutine
+playing it — that is what the completion callback is for, and why nothing on it
+should be read from elsewhere while it runs.
 
 ### Live data
 
