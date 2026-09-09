@@ -6,16 +6,16 @@ Two modules, one repository.
 
 | Path | Module | Depends on |
 |---|---|---|
-| `.` | `github.com/timzifer/fyne-refract` | Fyne, refract, refract's raster backend |
-| `gpu` | `github.com/timzifer/fyne-refract/gpu` | the above plus refract's GPU tier, and through it wgpu |
+| `.` | `github.com/timzifer/fyne-figure` | Fyne, figure, figure's raster backend |
+| `gpu` | `github.com/timzifer/fyne-figure/gpu` | the above plus figure's GPU tier, and through it wgpu |
 
 The split is not cosmetic. A nested module is excluded from its parent's module
 graph, so importing the widget cannot pull a GPU stack into a build that never
-asked for one. It is the arrangement refract makes for the same tier one level
+asked for one. It is the arrangement figure makes for the same tier one level
 up.
 
-Inside the main module the split is refract's own, between `backend/window` and
-`backend/window/show`: `fynerefract` draws and `fynerefract/chart` steers. A
+Inside the main module the split is figure's own, between `backend/window` and
+`backend/window/show`: `fynefigure` draws and `fynefigure/chart` steers. A
 backend must not know what a scale or a panel is, and everything in `chart` is
 about scales and panels. A change that needs to cross that line is a sign the
 seam is in the wrong place — say so rather than routing around it.
@@ -38,11 +38,11 @@ CGO_ENABLED=0 go build . ./chart
 go run ./cmd/demo
 ```
 
-Developing against a refract checkout next door wants a workspace. It is not
+Developing against a figure checkout next door wants a workspace. It is not
 committed, and the `require` directives always name published tags:
 
 ```sh
-go work init . ./gpu ../refract ../refract/backend/gg ../refract/backend/gg/gpu
+go work init . ./gpu ../figure ../figure/backend/gg ../figure/backend/gg/gpu
 ```
 
 ## The measurements
@@ -56,7 +56,7 @@ go test -run='^$' -bench=Drag  -benchtime=20x ./chart  # what the pacing saves
 go test -run='^$' -bench=Frame -benchtime=25x ./gpu    # the GPU tier
 ```
 
-`fynerefract.DamageBudget`, `chart.Detail`, `chart.FrameInterval` and the
+`fynefigure.DamageBudget`, `chart.Detail`, `chart.FrameInterval` and the
 choice to draw whole frames rather than partial ones each have a table in their
 doc comment. A change that moves one should move its table too.
 
@@ -71,7 +71,7 @@ cd gpu && go test -tags tierparity -run Parity ./...
 ## Tests
 
 They need no display: Fyne's test driver paints in software. What is asserted
-is what refract reports — the size the chart was laid out at, the domain after
+is what figure reports — the size the chart was laid out at, the domain after
 a zoom, the frames it painted — rather than how it looks. A test that scraped
 pixels to check an interaction would be testing the rasterizer.
 
@@ -91,7 +91,7 @@ desktop driver and is not under the test one. Resting on the two being the same
 is what the lock exists to avoid. `Render` is not reentrant, and `Plot.Live`
 and `Live.Close` both reach back into the target — so neither goes inside one.
 
-**Input is paced, and dropping an event loses nothing.** refract pans by the
+**Input is paced, and dropping an event loses nothing.** figure pans by the
 distance from the last position it was told about, and wheel deltas are summed,
 which is exact. Anything added to the gesture path has to keep that true.
 
@@ -100,4 +100,4 @@ axis rounds its domain outward; both are right for a still chart and wrong for
 a sliding window. See `chart.Follow`.
 
 **Partial repaints are off on purpose.** They cost six times what they save on
-the CPU rasterizer. The number is in `fynerefract.DamageBudget`.
+the CPU rasterizer. The number is in `fynefigure.DamageBudget`.

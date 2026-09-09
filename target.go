@@ -1,4 +1,4 @@
-package fynerefract
+package fynefigure
 
 import (
 	"image"
@@ -6,8 +6,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	ggbackend "github.com/timzifer/refract/backend/gg"
-	"github.com/timzifer/refract/ir"
+	ggbackend "github.com/timzifer/figure/backend/gg"
+	"github.com/timzifer/figure/ir"
 )
 
 // Target is a render destination that draws into memory and shows the result
@@ -60,18 +60,18 @@ func New(opts ...Option) *Target {
 }
 
 // Open prepares the target for a chart of the given size. It is [ir.Target]'s
-// half of the contract and is called by refract, not by a caller.
-func (t *Target) Open(widthPx, heightPx int, dpr float64) (ir.Backend, error) {
+// half of the contract and is called by figure, not by a caller.
+func (t *Target) Open(s ir.Surface) (ir.Backend, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	b, err := t.surf.Open(widthPx, heightPx, dpr)
+	b, err := t.surf.Open(s)
 	if err != nil {
 		return nil, err
 	}
 	t.back, t.shown = &counter{
 		Backend: b,
-		w:       float32(widthPx),
-		h:       float32(heightPx),
+		w:       float32(s.WidthPx),
+		h:       float32(s.HeightPx),
 		budget:  t.cfg.budget,
 	}, 0
 	return t.back, nil
@@ -198,7 +198,7 @@ func (t *Target) Image() image.Image {
 
 // Frames reports how many frames have been painted into the surface.
 //
-// It is not a frame number: refract paints nothing for a frame identical to
+// It is not a frame number: figure paints nothing for a frame identical to
 // the one before it, so this counts the frames that changed something. It is
 // what a test asserts on, and what tells a caller whether the last draw did
 // any work.

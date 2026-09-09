@@ -1,19 +1,19 @@
-package fynerefract_test
+package fynefigure_test
 
 import (
 	"math"
 	"strconv"
 	"testing"
 
-	fynerefract "github.com/timzifer/fyne-refract"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/data"
-	"github.com/timzifer/refract/geom"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/data"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/scale"
+	fynefigure "github.com/timzifer/fyne-figure"
 )
 
 // What a frame costs, and whether repainting only the part of it that changed
-// is worth what it costs. The answer is in [fynerefract.DamageBudget]; these
+// is worth what it costs. The answer is in [fynefigure.DamageBudget]; these
 // are the measurements behind it, and what to re-run before changing its
 // default.
 //
@@ -35,7 +35,7 @@ func BenchmarkResolution(b *testing.B) {
 }
 
 func benchPanAt(b *testing.B, dpr float64) {
-	p := refract.New(refract.Size(900, 480), refract.Title("Signal"))
+	p := figure.New(figure.Size(900, 480), figure.Title("Signal"))
 	p.Add(geom.Line(signal(4000), geom.X("t"), geom.Y("signal")))
 
 	live := open(b, p, 0)
@@ -62,7 +62,7 @@ func benchStreamAt(b *testing.B, dpr float64) {
 			b.Fatal(err)
 		}
 	}
-	p := refract.New(refract.Size(900, 480))
+	p := figure.New(figure.Size(900, 480))
 	p.X(scale.Linear(scale.Domain(0, 600)))
 	p.Y(scale.Linear(scale.Domain(0, 120)))
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y")))
@@ -110,7 +110,7 @@ func benchStream(b *testing.B, budget float32, window, seed int) {
 			b.Fatal(err)
 		}
 	}
-	p := refract.New(refract.Size(900, 480))
+	p := figure.New(figure.Size(900, 480))
 	p.X(scale.Linear(scale.Domain(0, float64(window))))
 	p.Y(scale.Linear(scale.Domain(0, 120)))
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y")))
@@ -138,7 +138,7 @@ func benchStream(b *testing.B, budget float32, window, seed int) {
 // benchPan is a reader dragging a static chart, which is the case a partial
 // repaint is supposed to be for: the furniture does not move, only the marks.
 func benchPan(b *testing.B, budget float32) {
-	p := refract.New(refract.Size(900, 480), refract.Title("Signal"))
+	p := figure.New(figure.Size(900, 480), figure.Title("Signal"))
 	p.Add(geom.Line(signal(4000), geom.X("t"), geom.Y("signal")))
 
 	live := open(b, p, budget)
@@ -155,9 +155,9 @@ func benchPan(b *testing.B, budget float32) {
 	}
 }
 
-func open(b *testing.B, p *refract.Plot, budget float32) *refract.Live {
+func open(b *testing.B, p *figure.Plot, budget float32) *figure.Live {
 	b.Helper()
-	live, err := p.Live(fynerefract.New(fynerefract.DamageBudget(budget)))
+	live, err := p.Live(fynefigure.New(fynefigure.DamageBudget(budget)))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func open(b *testing.B, p *refract.Plot, budget float32) *refract.Live {
 
 func throughput(t float64) float64 { return 70 + 25*math.Sin(t/50) }
 
-func signal(n int) refract.Source {
+func signal(n int) figure.Source {
 	x := make([]float64, n)
 	y := make([]float64, n)
 	for i := range n {
@@ -177,5 +177,5 @@ func signal(n int) refract.Source {
 		x[i] = t
 		y[i] = math.Sin(t) + 0.35*math.Sin(7.3*t) + 0.12*math.Sin(31*t)
 	}
-	return refract.Float64Columns(map[string][]float64{"t": x, "signal": y})
+	return figure.Float64Columns(map[string][]float64{"t": x, "signal": y})
 }

@@ -8,15 +8,15 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
-	fynerefract "github.com/timzifer/fyne-refract"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/data"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/data"
+	"github.com/timzifer/figure/scale"
+	fynefigure "github.com/timzifer/fyne-figure"
 )
 
-// Chart is a refract plot as a Fyne widget.
+// Chart is a figure plot as a Fyne widget.
 //
-// It is drawn by [fynerefract.Target] and steered by [refract.Input], so what
+// It is drawn by [fynefigure.Target] and steered by [figure.Input], so what
 // it shows is what the same plot would write to a file, and how it behaves is
 // how the same plot behaves in a browser or a native window: hover to see what
 // is under the pointer, drag to pan, turn the wheel to zoom about it, double
@@ -28,12 +28,12 @@ import (
 type Chart struct {
 	widget.BaseWidget
 
-	plot *refract.Plot
+	plot *figure.Plot
 	cfg  config
 
-	target *fynerefract.Target
-	live   *refract.Live
-	in     *refract.Input
+	target *fynefigure.Target
+	live   *figure.Live
+	in     *figure.Input
 
 	// w and h are the logical size the chart was last laid out at, and dpr the
 	// device pixel ratio it was last rasterized at.
@@ -88,16 +88,16 @@ type Chart struct {
 	tip *tooltip
 
 	// The overlay layer. overlay is what a caller installed and brush is the
-	// rubber band of a [DragMode] drag; ov composes the two and is what refract
+	// rubber band of a [DragMode] drag; ov composes the two and is what figure
 	// is actually given. banding says a band is being dragged out right now,
 	// which is the only time the brush paints — an installed overlay makes
-	// every hover redraw (see [refract.Input.Move]), so a chart with neither
+	// every hover redraw (see [figure.Input.Move]), so a chart with neither
 	// has none installed and pays nothing.
-	overlay refract.Overlay
-	brush   *refract.Brush
+	overlay figure.Overlay
+	brush   *figure.Brush
 	ov      *overlays
 	banding bool
-	onView  func(refract.View)
+	onView  func(figure.View)
 
 	stream *data.Stream
 	stopFn func()
@@ -119,7 +119,7 @@ type Chart struct {
 }
 
 // The interfaces a chart answers. Tapping is deliberately not among them: a
-// click already arrives through MouseUp, where refract's own click slop
+// click already arrives through MouseUp, where figure's own click slop
 // decides whether it was one, and fyne.Tappable would deliver a second copy of
 // it a double-click delay later.
 var (
@@ -136,7 +136,7 @@ var (
 //
 // Nothing is rasterized until the widget is laid out, so a chart built and
 // never shown has taken no memory beyond the plot itself.
-func New(p *refract.Plot, opts ...Option) *Chart {
+func New(p *figure.Plot, opts ...Option) *Chart {
 	c := &Chart{plot: p, cfg: defaults(), dpr: 1}
 	for _, o := range opts {
 		o(&c.cfg)
@@ -144,9 +144,9 @@ func New(p *refract.Plot, opts ...Option) *Chart {
 	c.overlay, c.ov = c.cfg.overlay, &overlays{}
 	c.brush = c.cfg.brush
 	if !c.cfg.brushSet {
-		// The default band: refract's own look, which reads against either
+		// The default band: figure's own look, which reads against either
 		// theme because it is drawn in the theme's own axis colour.
-		c.brush = &refract.Brush{}
+		c.brush = &figure.Brush{}
 	}
 	c.ExtendBaseWidget(c)
 	return c
@@ -154,19 +154,19 @@ func New(p *refract.Plot, opts ...Option) *Chart {
 
 // Plot returns the plot the chart shows. Changing it — adding a layer,
 // replacing a scale — takes effect on the next [Chart.Rebuild].
-func (c *Chart) Plot() *refract.Plot { return c.plot }
+func (c *Chart) Plot() *figure.Plot { return c.plot }
 
 // Live returns the chart being drawn, or nil before the first layout.
 //
-// It is the whole of refract's interactive API: zoom to a rectangle, read the
+// It is the whole of figure's interactive API: zoom to a rectangle, read the
 // hit index, ask what size the surface is. A caller that drives it directly
 // should call [Chart.Present] afterwards, or simply [Chart.Refresh].
-func (c *Chart) Live() *refract.Live { return c.live }
+func (c *Chart) Live() *figure.Live { return c.live }
 
 // Target returns what the chart is drawn into, or nil before the first
 // layout. It is the way to the pixels: an export of exactly what is on screen
-// reads [fynerefract.Target.Image].
-func (c *Chart) Target() *fynerefract.Target { return c.target }
+// reads [fynefigure.Target.Image].
+func (c *Chart) Target() *fynefigure.Target { return c.target }
 
 // Err reports what went wrong in the last frame, if anything.
 //
@@ -330,13 +330,13 @@ func (c *Chart) ensureTarget() {
 	if c.target != nil {
 		return
 	}
-	var opts []fynerefract.Option
+	var opts []fynefigure.Option
 	if c.cfg.font {
 		if regular, bold, italic, ok := c.themeFonts(); ok {
-			opts = append(opts, fynerefract.Font(regular, bold, italic))
+			opts = append(opts, fynefigure.Font(regular, bold, italic))
 		}
 	}
-	c.target = fynerefract.New(opts...)
+	c.target = fynefigure.New(opts...)
 	c.target.OnGeometry(c.painterGeometry)
 	c.themed = c.themeStateNow()
 }
@@ -476,7 +476,7 @@ func (c *Chart) unnice() bool {
 
 // plainly replaces s with the same scale minus its nicing, and reports whether
 // it did.
-func plainly(s scale.Scale, set func(scale.Scale) *refract.Plot) bool {
+func plainly(s scale.Scale, set func(scale.Scale) *figure.Plot) bool {
 	d, ok := scale.Describe(s)
 	if !ok || !d.Nice || d.Fixed || d.Formatted {
 		return false
@@ -500,7 +500,7 @@ func (c *Chart) follows() bool {
 //
 // It is not, on a chart that follows its data unless [FollowPause] says so: a
 // pan and the follow would fight over the same axis every frame, and the pan
-// would lose — refract redraws from inside PanBy and Wheel, so a gesture frame
+// would lose — figure redraws from inside PanBy and Wheel, so a gesture frame
 // shows the view the reader dragged to and the next frame snaps it back to the
 // data. Ignoring the gesture is the honest version of what would happen
 // anyway, without the flicker.
@@ -510,24 +510,24 @@ func (c *Chart) steers() bool { return !c.follows() || c.cfg.pause }
 // behind each mark.
 //
 // [TrackRows] asks for it, and so does a drag that selects: a selection is
-// [refract.Live.Select], which reads the rows out of the hit index, and an
+// [figure.Live.Select], which reads the rows out of the hit index, and an
 // index that was not tracking them holds none — so a chart in
-// [refract.DragSelects] that was not also told to track rows would drag out a
+// [figure.DragSelects] that was not also told to track rows would drag out a
 // rectangle and report nothing under it. Turning it on for the mode that needs
 // it is not a default anybody would want overridden.
 func (c *Chart) tracksRows() bool {
-	return c.cfg.trackRows || c.cfg.drag == refract.DragSelects
+	return c.cfg.trackRows || c.cfg.drag == figure.DragSelects
 }
 
 // drags reports whether a press starts a gesture the chart will act on.
 //
 // It is [Chart.steers] for every drag that moves the view, and true regardless
-// for [refract.DragSelects], which moves nothing: a chart following a stream
+// for [figure.DragSelects], which moves nothing: a chart following a stream
 // still has rows a reader may want to mark out, and refusing the gesture there
 // would be refusing it for a reason that does not apply. A drag that zooms to
 // its band does move the view, and is refused with the pan.
 func (c *Chart) drags() bool {
-	return c.cfg.drag == refract.DragSelects || c.steers()
+	return c.cfg.drag == figure.DragSelects || c.steers()
 }
 
 // releaseFollowed forgets what the followed axes were trained on, so that the
@@ -571,14 +571,14 @@ func (c *Chart) hookEvents() {
 	// A reader who has grabbed the chart has taken it off the follow: see
 	// [Follow]. Both handlers are registered whether or not there is a
 	// tooltip, because following is not a tooltip's business.
-	c.plot.On(refract.Zoom, func(refract.Event) { c.steered = true; c.viewChanged() })
-	c.plot.On(refract.Pan, func(refract.Event) { c.steered = true; c.viewChanged() })
+	c.plot.On(figure.Zoom, func(figure.Event) { c.steered = true; c.viewChanged() })
+	c.plot.On(figure.Pan, func(figure.Event) { c.steered = true; c.viewChanged() })
 	// A click on a legend row, when the chart was asked to wire one. It runs
 	// inside the surface the release already holds — see [Chart.MouseUp] — so
 	// the redraw Live.Toggle does needs no hold of its own, and it must not
 	// take the chart's lock, which the same call already has.
-	c.plot.On(refract.Click, func(ev refract.Event) {
-		if !c.cfg.legendToggle || c.live == nil || ev.Hit.Kind != refract.LegendRow {
+	c.plot.On(figure.Click, func(ev figure.Event) {
+		if !c.cfg.legendToggle || c.live == nil || ev.Hit.Kind != figure.LegendRow {
 			return
 		}
 		if err := c.live.Toggle(ev.Hit.Layer); err != nil {
@@ -588,8 +588,8 @@ func (c *Chart) hookEvents() {
 	if !c.cfg.tooltip {
 		return
 	}
-	c.plot.On(refract.Hover, func(ev refract.Event) { c.tip.show(ev) })
-	c.plot.On(refract.Leave, func(refract.Event) { c.tip.hide() })
-	c.plot.On(refract.Pan, func(refract.Event) { c.tip.hide() })
-	c.plot.On(refract.Zoom, func(refract.Event) { c.tip.hide() })
+	c.plot.On(figure.Hover, func(ev figure.Event) { c.tip.show(ev) })
+	c.plot.On(figure.Leave, func(figure.Event) { c.tip.hide() })
+	c.plot.On(figure.Pan, func(figure.Event) { c.tip.hide() })
+	c.plot.On(figure.Zoom, func(figure.Event) { c.tip.hide() })
 }

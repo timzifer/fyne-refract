@@ -1,30 +1,13 @@
-# fyne-refract
+# fyne-figure
 
-> ## This module is now [`github.com/timzifer/fyne-figure`](https://github.com/timzifer/fyne-figure)
->
-> [refract was renamed to figure](https://github.com/timzifer/figure), and this
-> bridge followed it. **`v0.3.1` is the last release here** — it is `v0.3.0`
-> plus this notice.
->
-> ```sh
-> go get github.com/timzifer/fyne-figure
-> ```
->
-> Everything under this path keeps working and keeps its tags. It receives no
-> fixes and no features.
->
-> Migrating is an import-path change and one method signature: an `ir.Resizer`
-> takes an `ir.Surface` rather than a width, a height and a device pixel ratio.
-> Nothing else in the API this bridge uses changed its name or its shape.
-
-[![CI](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne-refract.svg)](https://pkg.go.dev/github.com/timzifer/fyne-refract)
+[![CI](https://github.com/timzifer/fyne-figure/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne-figure/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne-figure.svg)](https://pkg.go.dev/github.com/timzifer/fyne-figure)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[refract](https://github.com/timzifer/refract) charts in a [Fyne](https://fyne.io) app.
+[figure](https://github.com/timzifer/figure) charts in a [Fyne](https://fyne.io) app.
 
 ```go
-p := refract.New(refract.Responsive(true), refract.Title("Signal"))
+p := figure.New(figure.Responsive(true), figure.Title("Signal"))
 p.Add(geom.Line(src, geom.X("t"), geom.Y("signal")))
 
 w.SetContent(chart.New(p))
@@ -35,18 +18,18 @@ pointer, resets the view on a double click, follows its own size and the
 application's colours, and shows a tooltip for the mark under the pointer.
 
 ```sh
-go get github.com/timzifer/fyne-refract
-go run github.com/timzifer/fyne-refract/cmd/demo@latest
+go get github.com/timzifer/fyne-figure
+go run github.com/timzifer/fyne-figure/cmd/demo@latest
 ```
 
 ## What is in here
 
 | Package | |
 |---|---|
-| `fynerefract` | an `ir.Target` that rasterizes a chart and shows it in a `canvas.Raster` |
-| `fynerefract/chart` | the widget: the plot, the pointer, the tooltip, the theme, the stream |
+| `fynefigure` | an `ir.Target` that rasterizes a chart and shows it in a `canvas.Raster` |
+| `fynefigure/chart` | the widget: the plot, the pointer, the tooltip, the theme, the stream |
 
-The split is refract's own, between `backend/window` and `backend/window/show`:
+The split is figure's own, between `backend/window` and `backend/window/show`:
 one draws, the other steers. A backend must not know what a scale or a panel
 is, and everything in `chart` is about scales and panels.
 
@@ -58,11 +41,11 @@ transform, no stroke joins or dashes, no rotated text — and its own rasterizer
 is under `internal/`. A renderer built on those primitives could not draw a
 smoothed line, a polar chart, a clipped panel or a rotated axis label at all.
 
-Writing a second rasterizer instead is what refract's
-[ADR 0021](https://github.com/timzifer/refract/blob/main/docs/adr/0021-native-window.md)
+Writing a second rasterizer instead is what figure's
+[ADR 0021](https://github.com/timzifer/figure/blob/main/docs/adr/0021-native-window.md)
 rejects: the day it disagrees with the first is the day a chart looks different
-on screen than in the file it exports. So this does what refract's native
-window does. It rasterizes with `backend/gg` — refract's one rasterizer — and
+on screen than in the file it exports. So this does what figure's native
+window does. It rasterizes with `backend/gg` — figure's one rasterizer — and
 presents the pixels.
 
 Two things follow, and both are tested:
@@ -86,10 +69,10 @@ c := chart.New(p,
     chart.FrameInterval(0),                // 0 is adaptive, <0 draws every event
     chart.Follow(true, false),             // x tracks the data, y stays put
     chart.TrackRows(true),                 // Hit.Row on every hover
-    chart.DragMode(refract.DragSelects),   // drag marks out a rectangle
-    chart.Brush(&refract.Brush{}),         // what that rectangle looks like
+    chart.DragMode(figure.DragSelects),   // drag marks out a rectangle
+    chart.Brush(&figure.Brush{}),         // what that rectangle looks like
     chart.LegendToggle(true),              // click a legend row to hide a series
-    chart.Overlay(&refract.Crosshair{}),   // paint over the finished chart
+    chart.Overlay(&figure.Crosshair{}),   // paint over the finished chart
     chart.TooltipFormat(myFormat),         // or chart.Tooltip(false)
     chart.TooltipLook(myTooltipStyle),     // colours, padding, type
     chart.ThemeFont(true),                 // the app's typeface; see below
@@ -97,10 +80,10 @@ c := chart.New(p,
 )
 ```
 
-Events are refract's, not a second set of callbacks:
+Events are figure's, not a second set of callbacks:
 
 ```go
-p.On(refract.Hover, func(ev refract.Event) {
+p.On(figure.Hover, func(ev figure.Event) {
     if ev.Found {
         status.SetText(ev.Series())
     }
@@ -109,20 +92,20 @@ p.On(refract.Hover, func(ev refract.Event) {
 
 ### Selecting, hiding, linking
 
-refract wires none of these itself, and says why in its ADRs 0045 and 0047: a
+figure wires none of these itself, and says why in its ADRs 0045 and 0047: a
 legend that always toggled, a crosshair nobody asked for and two charts that
 always moved together would each be wrong somewhere. The widget offers them as
 switches because for a widget they are the common case, and every one of them
 is off by default.
 
 A drag can mark out a rectangle instead of panning. The rows under it arrive as
-ordinary refract events, one per layer, and the chart draws the band — refract
+ordinary figure events, one per layer, and the chart draws the band — figure
 paints nothing while one is being dragged out, because what the feedback looks
 like is the surface's business:
 
 ```go
-c := chart.New(p, chart.DragMode(refract.DragSelects))
-c.Plot().On(refract.Select, func(ev refract.Event) {
+c := chart.New(p, chart.DragMode(figure.DragSelects))
+c.Plot().On(figure.Select, func(ev figure.Event) {
     fmt.Println(ev.Hit.Series, len(ev.Rows))
 })
 ```
@@ -144,8 +127,8 @@ That does not loop: `SetView` is not a reader moving anything and reports
 nothing back.
 
 ```go
-left.OnViewChange(func(v refract.View) { right.SetView(v) })
-right.OnViewChange(func(v refract.View) { left.SetView(v) })
+left.OnViewChange(func(v figure.View) { right.SetView(v) })
+right.OnViewChange(func(v figure.View) { left.SetView(v) })
 ```
 
 ### Overlays
@@ -155,9 +138,9 @@ points, a box of text. It is installed once and then moved, because it is a
 pointer to a struct whose fields a handler writes:
 
 ```go
-cross := &refract.Crosshair{}
+cross := &figure.Crosshair{}
 c.Overlay(cross)
-c.Plot().On(refract.Hover, func(ev refract.Event) {
+c.Plot().On(figure.Hover, func(ev figure.Event) {
     cross.At, cross.Show = ev.Hit.At, ev.Found
 })
 ```
@@ -169,13 +152,13 @@ of a selection drag, so a chart with both shows both.
 
 ### Transitions
 
-A transition is refract's — a keyed join between two tables, blended in data
+A transition is figure's — a keyed join between two tables, blended in data
 space — and the clock is the host's. The widget is the clock:
 
 ```go
 tw, _ := data.NewTween(before, after, "lang", data.Hold("slot"))
 tr, _ := c.Transition(tw)
-c.Play(tr.Over(400*time.Millisecond).Ease(refract.EaseOut), func() {
+c.Play(tr.Over(400*time.Millisecond).Ease(figure.EaseOut), func() {
     fmt.Println("arrived")
 })
 ```
@@ -224,7 +207,7 @@ A followed chart is not dragged or zoomed. That sounds like a restriction and
 is the opposite: a sliding window has nothing behind its tip, because the rows
 that scrolled off were dropped, so a pan that took the view back would strand
 the reader in front of data that no longer exists while the live data marched
-off the other side. It would also flicker — refract redraws from inside its own
+off the other side. It would also flicker — figure redraws from inside its own
 pan, so a gesture frame would show the dragged view and the next frame would
 snap back to the data. `chart.FollowPause(true)` is the other policy: the first
 gesture pauses following, the view stays where the reader put it, and the
@@ -241,7 +224,7 @@ A hover shows the series and the values under the pointer. What it says is
 lines:
 
 ```go
-chart.TooltipFormat(func(h refract.Hit) string {
+chart.TooltipFormat(func(h figure.Hit) string {
     return fmt.Sprintf("%s
 %.4g", h.Series, h.Y)
 })
@@ -255,7 +238,7 @@ own belongs:
 ```go
 type reading struct{ unit string }
 
-func (r reading) Tooltip(h refract.Hit) chart.TooltipContent {
+func (r reading) Tooltip(h figure.Hit) chart.TooltipContent {
     c := chart.TooltipContent{Text: fmt.Sprintf("%.1f %s", h.Y, r.unit)}
     if h.Y < 0 {
         c.Style.Text = color.NRGBA{R: 220, G: 60, B: 60, A: 255}
@@ -291,7 +274,7 @@ The newest position replaces it, and a trailing timer draws whatever is left
 over, so a drag that stops still lands where it stopped. A hundred drag events
 cost 60 ms of work instead of 2.6 seconds.
 
-Nothing is lost by dropping a pan — refract pans by the distance from the last
+Nothing is lost by dropping a pan — figure pans by the distance from the last
 position it was told about, so the next one covers the whole way — and nothing
 by dropping a zoom, because the deltas are added up and applied together
 (a wheel factor is `exp(delta/1000)`, and `exp(a)*exp(b)` is `exp(a+b)`).
@@ -339,7 +322,7 @@ So an interactive chart runs at twenty to thirty frames a second, and a hover
 costs nothing because it paints nothing. That is the rasterizer's price, and it
 is why the pacing above exists rather than being a nicety.
 
-There is a GPU tier, in `fyne-refract/gpu`, and it is worth having:
+There is a GPU tier, in `fyne-figure/gpu`, and it is worth having:
 
 | | CPU | GPU |
 |---|---|---|
@@ -349,11 +332,11 @@ There is a GPU tier, in `fyne-refract/gpu`, and it is worth having:
 One blank import turns it on:
 
 ```go
-import _ "github.com/timzifer/fyne-refract/gpu"
+import _ "github.com/timzifer/fyne-figure/gpu"
 ```
 
 A machine with no usable device falls back to the CPU rasterizer, and
-`gpu.Enabled` reports which way it went — refract's tier proves the accelerator
+`gpu.Enabled` reports which way it went — figure's tier proves the accelerator
 puts ink in a buffer before keeping it, so that is an answer about drawing
 rather than about registration.
 
@@ -361,22 +344,22 @@ The two tiers do not share a coverage filler, so they do not agree pixel for
 pixel: the difference is the antialiasing on the edge of everything drawn,
 about one part in 255 on average. The package's parity test measures it.
 
-Refract offers to tell a backend *where* a frame changed so that only that part
+Figure offers to tell a backend *where* a frame changed so that only that part
 is repainted. It is off here, because measured it is six times slower: the
 rasterizer clears the damaged box and clips every drawing call to it, and its
 clip is a mask rasterized across the surface and then sampled per pixel — on
 top of the clip a panel already puts there. A stream sliding left costs 29 ms a
-frame whole and 180 ms partial. `fynerefract.DamageBudget` turns it back on for
+frame whole and 180 ms partial. `fynefigure.DamageBudget` turns it back on for
 a chart whose changes really are confined to a corner; `go test -bench=Frame`
 is the measurement.
 
 ### Colours and type
 
-The chart reads the application's background colour and picks refract's light
+The chart reads the application's background colour and picks figure's light
 or dark theme to match, in the page colour and the text size the Fyne theme
 asks for. `chart.FollowTheme(false)` turns that off.
 
-The labels are drawn in refract's own fonts rather than the application's, and
+The labels are drawn in figure's own fonts rather than the application's, and
 that is deliberate. Fyne renders text through a shaper that falls back: a
 character its theme font has no glyph for is drawn from another font, so the
 label appears. The rasterizer that draws a chart is handed one font and has no
@@ -396,7 +379,7 @@ go run ./cmd/demo   # needs a display
 ```
 
 The tests need no display: Fyne's software painter draws the widget, and what
-is asserted is what refract reports — the size it was laid out at, the domain
+is asserted is what figure reports — the size it was laid out at, the domain
 after a zoom, the frames it painted — rather than how it looks.
 
 On Linux the demo needs the headers Fyne's desktop driver is built against:
@@ -408,11 +391,11 @@ the defaults, and what to know before changing them.
 
 ## Versions
 
-`fyne.io/fyne/v2` v2.7.3, `github.com/timzifer/refract` v1.7.0 and its raster
-backend at the same tag, pinned exactly — a release of this bridge is validated
-against one release of each and says which.
+`fyne.io/fyne/v2` v2.7.3, `github.com/timzifer/figure` v0.8.1 and its raster
+backend at `backend/gg/v0.8.0`, pinned exactly — a release of this bridge is
+validated against one release of each and says which.
 
-refract and its rasterizer are cgo-free; Fyne's desktop driver is not, so a
+figure and its rasterizer are cgo-free; Fyne's desktop driver is not, so a
 program using this needs cgo the way any Fyne program does. Only the packages
 here and the tests build with `CGO_ENABLED=0` — the widget does, the window it
 goes in does not.

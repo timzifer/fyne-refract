@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"github.com/timzifer/refract/data"
+	"github.com/timzifer/figure/data"
 )
 
 // Stream tells the chart which stream to freeze before each frame.

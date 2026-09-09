@@ -1,26 +1,26 @@
-// Package chart shows a refract plot in a Fyne widget.
+// Package chart shows a figure plot in a Fyne widget.
 //
-//	p := refract.New(refract.Responsive(true), refract.Title("Signal"))
+//	p := figure.New(figure.Responsive(true), figure.Title("Signal"))
 //	p.Add(geom.Line(src, geom.X("t"), geom.Y("y")))
 //
 //	w.SetContent(chart.New(p))
 //
 // The widget hovers, clicks, zooms about the pointer, pans on a drag, resets
 // the view on a double click and follows its own size — all of which is
-// [refract.Input] driving [refract.Live], the same state machine the browser
+// [figure.Input] driving [figure.Live], the same state machine the browser
 // and the native window use. What this package adds is the wiring, and a
 // tooltip, a theme that follows Fyne's, and a way to keep a stream moving.
 //
 // # Pointing at things
 //
 // Beyond the gestures every chart has, four things a reader can do are wired
-// here and switched off by default, because refract deliberately wires none of
+// here and switched off by default, because figure deliberately wires none of
 // them: a legend that always toggled and two charts that always moved together
 // would each be wrong somewhere.
 //
 //   - [DragMode] makes a drag mark out a rectangle instead of panning, and
-//     [refract.Select] reports the rows under it. The band is drawn here —
-//     see [Brush] — because refract paints nothing while one is dragged out.
+//     [figure.Select] reports the rows under it. The band is drawn here —
+//     see [Brush] — because figure paints nothing while one is dragged out.
 //   - [LegendToggle] makes a click on a legend row hide the layer it stands
 //     for. [Chart.HideLayer] and the calls beside it are the same thing
 //     without the pointer.
@@ -30,7 +30,7 @@
 //
 // # Transitions
 //
-// A transition is refract's, and the clock is the host's: [Chart.Transition]
+// A transition is figure's, and the clock is the host's: [Chart.Transition]
 // builds one over the chart's rows and [Chart.Play] drives it to its end on
 // Fyne's goroutine, frame by frame, by the wall clock.
 //
@@ -50,13 +50,13 @@
 // than a mark. Those carry no X and no Y, so the tooltip says nothing about
 // them: a box reading "x 0, y 0" beside a series name would be a lie about
 // where the pointer is. A caller who does want to say something about one
-// handles [refract.Hover] and reads [refract.Hit.Kind].
+// handles [figure.Hover] and reads [figure.Hit.Kind].
 //
-// # Why this is not in package fynerefract
+// # Why this is not in package fynefigure
 //
 // Because wiring input is not drawing. A backend consumes IR and must not know
 // what a scale or a panel is, and everything here is about scales and panels;
-// package fynerefract draws, and this steers. refract makes the same split
+// package fynefigure draws, and this steers. figure makes the same split
 // between backend/window and backend/window/show.
 //
 // # Threading
@@ -66,8 +66,8 @@
 // a producer appending samples, a ticker — calls [Chart.Redraw], which is the
 // one method that may be called from anywhere.
 //
-// A [refract.Transition] being played is the other way round: it belongs to
+// A [figure.Transition] being played is the other way round: it belongs to
 // the goroutine playing it, and nothing on it — not even
-// [refract.Transition.Done] — may be read from elsewhere while [Chart.Play]
+// [figure.Transition.Done] — may be read from elsewhere while [Chart.Play]
 // runs. That is what Play's completion callback is for.
 package chart

@@ -5,9 +5,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	fynetheme "fyne.io/fyne/v2/theme"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/ir"
-	refracttheme "github.com/timzifer/refract/theme"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/ir"
+	figuretheme "github.com/timzifer/figure/theme"
 )
 
 // themeState is what a chart was last built for. Comparing two of them is how
@@ -78,7 +78,7 @@ func (c *Chart) refont() {
 	c.resize(size)
 }
 
-// applyTheme puts refract's own light or dark theme on the plot, in the page
+// applyTheme puts figure's own light or dark theme on the plot, in the page
 // colour and at the text size Fyne asks for.
 //
 // Which of the two is decided by how dark the application's background is
@@ -86,7 +86,7 @@ func (c *Chart) refont() {
 // obliged to be either: a custom one is whatever colours it names, and its
 // background is the honest answer to "is this a dark chart or a light one".
 //
-// It is refract.Theme applied to the plot directly rather than at
+// It is figure.Theme applied to the plot directly rather than at
 // construction: a Plot Option is an ordinary function, and a chart whose
 // surroundings changed colour has not become a different chart.
 func (c *Chart) applyTheme() {
@@ -95,19 +95,19 @@ func (c *Chart) applyTheme() {
 	}
 	st := c.themeStateNow()
 
-	base := refracttheme.Light
+	base := figuretheme.Light
 	if dark(st.background) {
-		base = refracttheme.Dark
+		base = figuretheme.Dark
 	}
 	// The page is Fyne's, so the chart sits in the widget rather than on a
 	// rectangle of its own.
-	opts := []refracttheme.Option{
-		refracttheme.Background(ir.RGBA(st.background.R, st.background.G, st.background.B, st.background.A)),
+	opts := []figuretheme.Option{
+		figuretheme.Background(ir.RGBA(st.background.R, st.background.G, st.background.B, st.background.A)),
 	}
 	if st.size > 0 {
-		opts = append(opts, refracttheme.FontSize(float64(st.size)))
+		opts = append(opts, figuretheme.FontSize(float64(st.size)))
 	}
-	refract.Theme(base.With(opts...))(c.plot)
+	figure.Theme(base.With(opts...))(c.plot)
 }
 
 // dark reports whether a background wants a dark chart. The weights are the
@@ -169,7 +169,7 @@ func fontBytes(th fyne.Theme, style fyne.TextStyle) []byte {
 }
 
 // rgba flattens a theme colour into the eight-bit non-premultiplied channels
-// refract's palette speaks in.
+// figure's palette speaks in.
 func rgba(c color.Color) color.RGBA {
 	if c == nil {
 		return color.RGBA{}

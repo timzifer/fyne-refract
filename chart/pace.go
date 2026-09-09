@@ -21,7 +21,7 @@ import (
 // interesting. What is left over is drawn by a trailing timer, so a drag that
 // stops still ends up where it stopped.
 //
-// Nothing is lost by dropping a pan: refract's Input pans by the distance from
+// Nothing is lost by dropping a pan: figure's Input pans by the distance from
 // the last position it was told about, so the next one it hears covers the
 // whole way. Nothing is lost by dropping a zoom either, because the deltas are
 // added up and applied together — a wheel factor is exp(delta/1000), and

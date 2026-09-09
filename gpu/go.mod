@@ -1,11 +1,11 @@
-module github.com/timzifer/fyne-refract/gpu
+module github.com/timzifer/fyne-figure/gpu
 
 go 1.25.0
 
 // The GPU tier is a module of its own so that importing the widget cannot pull
 // a GPU stack in by accident: a nested module is excluded from its parent's
-// module graph, so github.com/timzifer/fyne-refract keeps its dependencies to
-// Fyne, refract and refract's raster backend. It is the arrangement refract
+// module graph, so github.com/timzifer/fyne-figure keeps its dependencies to
+// Fyne, figure and figure's raster backend. It is the arrangement figure
 // makes for the same tier one level up — see its docs/adr/0022.
 //
 // It deliberately does not require the module it sits inside. It has nothing to
@@ -14,9 +14,9 @@ go 1.25.0
 // before the child could build.
 
 require (
-	github.com/timzifer/refract v1.7.0
-	github.com/timzifer/refract/backend/gg v1.7.0
-	github.com/timzifer/refract/backend/gg/gpu v0.3.1
+	github.com/timzifer/figure v0.8.1
+	github.com/timzifer/figure/backend/gg v0.8.0
+	github.com/timzifer/figure/backend/gg/gpu v0.3.0
 )
 
 require (

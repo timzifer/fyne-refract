@@ -5,13 +5,13 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
-// The pointer. Every handler hands the position to refract.Input and then asks
+// The pointer. Every handler hands the position to figure.Input and then asks
 // for a frame; Live paints nothing when the frame is identical to the last, so
 // a hover that found the same mark twice costs nothing.
 //
 // Both Hoverable and Draggable are implemented because Fyne splits the pointer
 // between them: while a button is held on a draggable object, MouseMoved stops
-// firing and Dragged fires instead. refract.Input wants one stream of
+// firing and Dragged fires instead. figure.Input wants one stream of
 // positions and works out for itself whether it is a hover or a pan.
 
 // MouseIn is called by Fyne. It is not part of the API.
@@ -84,7 +84,7 @@ func (c *Chart) MouseDown(ev *desktop.MouseEvent) {
 	c.down(ev.Position)
 }
 
-// down reports the press to refract, holding the surface. The lock is held by
+// down reports the press to figure, holding the surface. The lock is held by
 // the caller.
 func (c *Chart) down(pos fyne.Position) {
 	press := func() error { return c.in.Down(float64(pos.X), float64(pos.Y)) }
@@ -93,7 +93,7 @@ func (c *Chart) down(pos fyne.Position) {
 	}
 }
 
-// up reports the release to refract and shows what it drew.
+// up reports the release to figure and shows what it drew.
 //
 // It goes through the surface because a release is the one event that can draw
 // several different things: a rubber band that zooms to itself, a click on a
@@ -170,7 +170,7 @@ func (c *Chart) DragEnd() {
 
 // Scrolled is called by Fyne. It is not part of the API.
 //
-// Fyne counts a wheel notch in its own units and upwards; refract counts it in
+// Fyne counts a wheel notch in its own units and upwards; figure counts it in
 // the browser's pixels and downwards, where a positive delta pushes the chart
 // away and zooms out. [WheelScale] is the conversion.
 func (c *Chart) Scrolled(ev *fyne.ScrollEvent) {
@@ -246,7 +246,7 @@ func (c *Chart) Cursor() desktop.Cursor { return c.cfg.cursor }
 // last position it was told about, so the next one covers the whole way.
 //
 // A press that has not yet moved past the click slop is not paced either. Those
-// positions draw nothing — refract is still deciding whether this is a click —
+// positions draw nothing — figure is still deciding whether this is a click —
 // and dropping one would fold the slop into the first pan, moving the chart a
 // few pixels further than the same drag would move it unpaced.
 func (c *Chart) moved(pos fyne.Position) {
@@ -274,7 +274,7 @@ func (c *Chart) hover(pos fyne.Position) {
 		if err := c.in.Move(float64(pos.X), float64(pos.Y)); err != nil {
 			return err
 		}
-		// A rubber band moves nothing, so refract draws nothing while one is
+		// A rubber band moves nothing, so figure draws nothing while one is
 		// being dragged out: the feedback is the surface's, and this is it.
 		if c.band() {
 			return c.live.Draw()

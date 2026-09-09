@@ -7,13 +7,13 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/data"
-	"github.com/timzifer/refract/geom"
-	"github.com/timzifer/refract/ir"
-	"github.com/timzifer/refract/palette"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/data"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/ir"
+	"github.com/timzifer/figure/palette"
+	"github.com/timzifer/figure/scale"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 func TestClickingALegendRowHidesTheLayer(t *testing.T) {
@@ -38,7 +38,7 @@ func TestClickingALegendRowHidesTheLayer(t *testing.T) {
 	}
 }
 
-// The wiring is a switch and not a default: refract deliberately does not
+// The wiring is a switch and not a default: figure deliberately does not
 // toggle a legend by itself, and a chart that was not asked to must not either.
 func TestALegendDoesNotToggleUnlessAsked(t *testing.T) {
 	c := chart.New(legendPlot(), chart.ThemeFont(false))
@@ -76,11 +76,11 @@ func TestHidingALayerIsDrawnAndReported(t *testing.T) {
 // A drag in DragSelects reports the rows under the rectangle and does not move
 // the chart, which is the whole difference from a pan.
 func TestADragCanSelectInsteadOfPanning(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.DragMode(refract.DragSelects))
+	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
 	shownAt(t, c)
 
-	var events []refract.Event
-	c.Plot().On(refract.Select, func(ev refract.Event) { events = append(events, ev) })
+	var events []figure.Event
+	c.Plot().On(figure.Select, func(ev figure.Event) { events = append(events, ev) })
 
 	before := domains(c)
 	band(c, fyne.NewPos(120, 80), fyne.NewPos(300, 220))
@@ -101,10 +101,10 @@ func TestADragCanSelectInsteadOfPanning(t *testing.T) {
 	}
 }
 
-// The band is the surface's to draw: refract paints nothing while one is being
+// The band is the surface's to draw: figure paints nothing while one is being
 // dragged out. So the frames have to come from here.
 func TestARubberBandIsDrawnWhileItIsDraggedOut(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.DragMode(refract.DragSelects))
+	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
 	shownAt(t, c)
 
 	press(c, 120, 80)
@@ -126,16 +126,16 @@ func TestAFollowingChartCanStillBeSelectedOver(t *testing.T) {
 			t.Fatalf("appending to the stream: %v", err)
 		}
 	}
-	p := refract.New(refract.Size(400, 250))
+	p := figure.New(figure.Size(400, 250))
 	p.X(scale.Linear())
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y"), geom.Label("signal")))
 
-	c := chart.New(p, chart.ThemeFont(false), chart.DragMode(refract.DragSelects))
+	c := chart.New(p, chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
 	c.Stream(st)
 	shownAt(t, c)
 
 	var got int
-	c.Plot().On(refract.Select, func(refract.Event) { got++ })
+	c.Plot().On(figure.Select, func(figure.Event) { got++ })
 	band(c, fyne.NewPos(120, 80), fyne.NewPos(320, 220))
 	if got == 0 {
 		t.Error("a chart following its data refused a selection, which moves nothing")
@@ -145,17 +145,17 @@ func TestAFollowingChartCanStillBeSelectedOver(t *testing.T) {
 func TestAnOverlayIsInstalledAndOnlyWhenThereIsOne(t *testing.T) {
 	plain := chart.New(legendPlot(), chart.ThemeFont(false))
 	shownAt(t, plain)
-	// Nothing installed is not a detail: refract redraws on every hover while
+	// Nothing installed is not a detail: figure redraws on every hover while
 	// an overlay is installed, so a chart carrying an empty one would pay a
 	// frame per pointer move.
 	if plain.Live().CurrentOverlay() != nil {
 		t.Error("a chart with no overlay installed one anyway")
 	}
 
-	cross := &refract.Crosshair{}
+	cross := &figure.Crosshair{}
 	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.Overlay(cross))
 	shownAt(t, c)
-	if c.CurrentOverlay() != refract.Overlay(cross) {
+	if c.CurrentOverlay() != figure.Overlay(cross) {
 		t.Error("the overlay the chart was built with is not the one it reports")
 	}
 	if c.Live().CurrentOverlay() == nil {
@@ -175,7 +175,7 @@ func TestAnOverlayCanBeInstalledAfterTheChartIsShown(t *testing.T) {
 	c := chart.New(legendPlot(), chart.ThemeFont(false))
 	shownAt(t, c)
 
-	cross := &refract.Crosshair{At: ir.Point{X: 200, Y: 150}, Show: true}
+	cross := &figure.Crosshair{At: ir.Point{X: 200, Y: 150}, Show: true}
 	before := c.Target().Frames()
 	c.Overlay(cross)
 	if c.Live().CurrentOverlay() == nil {
@@ -198,7 +198,7 @@ func TestTheViewOfOneChartCanBePutIntoAnother(t *testing.T) {
 	shownAt(t, right)
 
 	var told int
-	left.OnViewChange(func(v refract.View) {
+	left.OnViewChange(func(v figure.View) {
 		told++
 		if err := right.SetView(v); err != nil {
 			t.Errorf("putting the view into the other chart: %v", err)
@@ -206,7 +206,7 @@ func TestTheViewOfOneChartCanBePutIntoAnother(t *testing.T) {
 	})
 	// And the other way, which is the arrangement that would loop if SetView
 	// reported the view it was given.
-	right.OnViewChange(func(v refract.View) {
+	right.OnViewChange(func(v figure.View) {
 		if err := left.SetView(v); err != nil {
 			t.Errorf("putting the view back: %v", err)
 		}
@@ -231,7 +231,7 @@ func TestSetViewReportsNothing(t *testing.T) {
 
 	v := c.View()
 	var told int
-	c.OnViewChange(func(refract.View) { told++ })
+	c.OnViewChange(func(figure.View) { told++ })
 	if err := c.SetView(v); err != nil {
 		t.Fatalf("putting the view back: %v", err)
 	}
@@ -240,7 +240,7 @@ func TestSetViewReportsNothing(t *testing.T) {
 	}
 }
 
-// The double click that puts the view back fires no event of refract's own, so
+// The double click that puts the view back fires no event of figure's own, so
 // the chart has to say so itself or a linked chart would stay zoomed.
 func TestGoingBackToTheWholePictureIsReported(t *testing.T) {
 	c := chart.New(legendPlot(), chart.ThemeFont(false))
@@ -248,7 +248,7 @@ func TestGoingBackToTheWholePictureIsReported(t *testing.T) {
 
 	scroll(c, fyne.NewPos(250, 150), 3)
 	var told int
-	c.OnViewChange(func(refract.View) { told++ })
+	c.OnViewChange(func(figure.View) { told++ })
 	c.DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
 	if told == 0 {
 		t.Error("a double click put the view back and told nobody")
@@ -256,11 +256,11 @@ func TestGoingBackToTheWholePictureIsReported(t *testing.T) {
 }
 
 func TestATransitionIsDrivenToItsEnd(t *testing.T) {
-	before := refract.NewTable().
+	before := figure.NewTable().
 		String("lang", []string{"go", "rust", "perl"}).
 		Float64("slot", []float64{0, 1, 2}).
 		Float64("share", []float64{40, 25, 18})
-	after := refract.NewTable().
+	after := figure.NewTable().
 		String("lang", []string{"go", "rust", "zig"}).
 		Float64("slot", []float64{0, 1, 2}).
 		Float64("share", []float64{30, 45, 22})
@@ -271,7 +271,7 @@ func TestATransitionIsDrivenToItsEnd(t *testing.T) {
 		t.Fatalf("building the tween: %v", err)
 	}
 
-	p := refract.New(refract.Size(400, 250))
+	p := figure.New(figure.Size(400, 250))
 	p.X(scale.Linear(scale.Domain(-0.6, 2.6)))
 	p.Y(scale.Linear(scale.Domain(0, 50)))
 	p.Add(geom.Bar(tw.Source(), geom.X("slot"), geom.Y("share"),
@@ -318,7 +318,7 @@ func TestPlayingATransitionOnAChartWithoutOneIsHarmless(t *testing.T) {
 	c.Play(nil, nil)()
 }
 
-// click presses and releases at one position, which is what refract's own
+// click presses and releases at one position, which is what figure's own
 // click slop turns into a click rather than a drag.
 func click(c *chart.Chart, pos fyne.Position) {
 	ev := &desktop.MouseEvent{PointEvent: fyne.PointEvent{Position: pos}, Button: desktop.MouseButtonPrimary}
@@ -344,7 +344,7 @@ func scroll(c *chart.Chart, at fyne.Position, notches float32) {
 }
 
 // domains is where every axis of every panel currently reaches. A
-// [refract.View] carries the same numbers and does not hand them out — it is a
+// [figure.View] carries the same numbers and does not hand them out — it is a
 // value to put back, not one to read — so a test that wants to say "the view
 // moved" reads them off the scales.
 func domains(c *chart.Chart) []float64 {

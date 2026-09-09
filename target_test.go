@@ -1,4 +1,4 @@
-package fynerefract_test
+package fynefigure_test
 
 import (
 	"bytes"
@@ -9,14 +9,14 @@ import (
 	"math"
 	"testing"
 
-	fynerefract "github.com/timzifer/fyne-refract"
-	"github.com/timzifer/refract"
-	ggbackend "github.com/timzifer/refract/backend/gg"
-	"github.com/timzifer/refract/geom"
+	"github.com/timzifer/figure"
+	ggbackend "github.com/timzifer/figure/backend/gg"
+	"github.com/timzifer/figure/geom"
+	fynefigure "github.com/timzifer/fyne-figure"
 )
 
 // The claim this package rests on is that a chart in a Fyne widget is the
-// chart refract would have written to a file. It holds because there is one
+// chart figure would have written to a file. It holds because there is one
 // rasterizer: the target here is backend/gg's surface with a Fyne front end,
 // so anything that made the two differ would be the presentation layer having
 // got into the drawing path.
@@ -31,7 +31,7 @@ func TestAFrameIsWhatTheRasterBackendWouldHaveWritten(t *testing.T) {
 		t.Fatalf("decoding the reference PNG: %v", err)
 	}
 
-	target := fynerefract.New()
+	target := fynefigure.New()
 	live, err := plot().Live(target)
 	if err != nil {
 		t.Fatalf("opening the chart: %v", err)
@@ -54,8 +54,8 @@ func TestAFrameIsWhatTheRasterBackendWouldHaveWritten(t *testing.T) {
 }
 
 func TestTheFrameFollowsTheDevicePixelRatio(t *testing.T) {
-	target := fynerefract.New()
-	p := refract.New(refract.Size(400, 250), refract.DPR(2))
+	target := fynefigure.New()
+	p := figure.New(figure.Size(400, 250), figure.DPR(2))
 	p.Add(geom.Line(source(), geom.X("t"), geom.Y("y")))
 	live, err := p.Live(target)
 	if err != nil {
@@ -76,7 +76,7 @@ func TestTheFrameFollowsTheDevicePixelRatio(t *testing.T) {
 }
 
 func TestAFrameThatChangedNothingIsNotPresentedAgain(t *testing.T) {
-	target := fynerefract.New()
+	target := fynefigure.New()
 	live, err := plot().Live(target)
 	if err != nil {
 		t.Fatalf("opening the chart: %v", err)
@@ -99,7 +99,7 @@ func TestAFrameThatChangedNothingIsNotPresentedAgain(t *testing.T) {
 }
 
 func TestTheRasterReportsAGeometryItWasNotDrawnAt(t *testing.T) {
-	target := fynerefract.New()
+	target := fynefigure.New()
 	live, err := plot().Live(target)
 	if err != nil {
 		t.Fatalf("opening the chart: %v", err)
@@ -132,7 +132,7 @@ func TestTheRasterReportsAGeometryItWasNotDrawnAt(t *testing.T) {
 }
 
 func TestTheRasterShowsSomethingBeforeThereIsAChart(t *testing.T) {
-	raster := fynerefract.New().Object().(*canvas.Raster)
+	raster := fynefigure.New().Object().(*canvas.Raster)
 	img := raster.Generator(120, 80)
 	if img == nil {
 		t.Fatal("a target with no chart generated no image")
@@ -158,13 +158,13 @@ func differingPixels(a, b image.Image) int {
 	return n
 }
 
-func plot() *refract.Plot {
-	p := refract.New(refract.Size(400, 250), refract.Title("Signal"))
+func plot() *figure.Plot {
+	p := figure.New(figure.Size(400, 250), figure.Title("Signal"))
 	p.Add(geom.Line(source(), geom.X("t"), geom.Y("y")))
 	return p
 }
 
-func source() refract.Source {
+func source() figure.Source {
 	const n = 200
 	x := make([]float64, n)
 	y := make([]float64, n)
@@ -172,5 +172,5 @@ func source() refract.Source {
 		t := float64(i) / 20
 		x[i], y[i] = t, math.Sin(t)
 	}
-	return refract.Float64Columns(map[string][]float64{"t": x, "y": y})
+	return figure.Float64Columns(map[string][]float64{"t": x, "y": y})
 }

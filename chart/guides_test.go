@@ -7,20 +7,20 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/geom"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/scale"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
-// Since refract v1.7 a chart has furniture a pointer can find: a legend row, a
+// A chart has furniture a pointer can find: a legend row, a
 // colourbar band, a size key sample. A hover in the margins reports one, which
 // is what makes a clickable legend possible — and what a tooltip has to know
 // about, because a guide carries no X and no Y.
 
-// A chart with two named series, which is what gives it a legend: refract draws
+// A chart with two named series, which is what gives it a legend: figure draws
 // none for a single layer, and a legend is what half of these tests point at.
-func legendPlot() *refract.Plot {
+func legendPlot() *figure.Plot {
 	const n = 60
 	x := make([]float64, n)
 	a := make([]float64, n)
@@ -29,9 +29,9 @@ func legendPlot() *refract.Plot {
 		v := float64(i) / 6
 		x[i], a[i], b[i] = v, math.Sin(v), math.Cos(v)
 	}
-	src := refract.Float64Columns(map[string][]float64{"t": x, "a": a, "b": b})
+	src := figure.Float64Columns(map[string][]float64{"t": x, "a": a, "b": b})
 
-	p := refract.New(refract.Size(400, 250), refract.Title("Signal"))
+	p := figure.New(figure.Size(400, 250), figure.Title("Signal"))
 	p.X(scale.Linear())
 	p.Add(geom.Line(src, geom.X("t"), geom.Y("a"), geom.Label("alpha")))
 	p.Add(geom.Line(src, geom.X("t"), geom.Y("b"), geom.Label("beta")))
@@ -50,12 +50,12 @@ func shownAt(t *testing.T, c *chart.Chart) fyne.Window {
 
 // legendAt finds a position over a legend row, by asking the chart what is
 // under each of a grid of points until one of them is furniture.
-func legendAt(t *testing.T, c *chart.Chart) (fyne.Position, refract.Hit) {
+func legendAt(t *testing.T, c *chart.Chart) (fyne.Position, figure.Hit) {
 	t.Helper()
-	var found refract.Hit
+	var found figure.Hit
 	var ok bool
-	c.Plot().On(refract.Hover, func(ev refract.Event) {
-		if ev.Found && ev.Hit.Kind == refract.LegendRow {
+	c.Plot().On(figure.Hover, func(ev figure.Event) {
+		if ev.Found && ev.Hit.Kind == figure.LegendRow {
 			found, ok = ev.Hit, true
 		}
 	})
@@ -69,10 +69,10 @@ func legendAt(t *testing.T, c *chart.Chart) (fyne.Position, refract.Hit) {
 		}
 	}
 	t.Skip("no position over this chart found a legend row")
-	return fyne.Position{}, refract.Hit{}
+	return fyne.Position{}, figure.Hit{}
 }
 
-// Since refract v1.7 a hover in the margins finds a legend row, and a legend
+// A hover in the margins finds a legend row, and a legend
 // row carries no X and no Y. A tooltip that described one would say "x 0, y 0"
 // beside the series name, which is a lie about where the pointer is.
 func TestATooltipSaysNothingAboutTheLegend(t *testing.T) {

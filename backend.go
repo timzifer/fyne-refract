@@ -1,6 +1,6 @@
-package fynerefract
+package fynefigure
 
-import "github.com/timzifer/refract/ir"
+import "github.com/timzifer/figure/ir"
 
 // counter wraps the rasterizer's backend to count the frames it painted.
 //
@@ -17,7 +17,7 @@ import "github.com/timzifer/refract/ir"
 //
 // # Forwarding
 //
-// A wrapper hides what it does not declare, and the failure is silent: refract
+// A wrapper hides what it does not declare, and the failure is silent: figure
 // asks a backend for its optional interfaces by type assertion, so a wrapper
 // that forgot ir.Partial would turn every partial repaint into a full one
 // without anything saying so. Damage and Resize are therefore declared here.
@@ -86,10 +86,10 @@ func (c *counter) area(rects []ir.Rect) float32 {
 }
 
 // Resize forwards a change of surface size or device pixel ratio.
-func (c *counter) Resize(widthPx, heightPx int, dpr float64) error {
-	c.w, c.h = float32(widthPx), float32(heightPx)
+func (c *counter) Resize(s ir.Surface) error {
+	c.w, c.h = float32(s.WidthPx), float32(s.HeightPx)
 	if r, ok := c.Backend.(ir.Resizer); ok {
-		return r.Resize(widthPx, heightPx, dpr)
+		return r.Resize(s)
 	}
 	return nil
 }

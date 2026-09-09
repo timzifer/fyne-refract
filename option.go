@@ -1,8 +1,8 @@
-package fynerefract
+package fynefigure
 
 import (
 	"fyne.io/fyne/v2/canvas"
-	ggbackend "github.com/timzifer/refract/backend/gg"
+	ggbackend "github.com/timzifer/figure/backend/gg"
 )
 
 // Option configures a [Target].
@@ -18,8 +18,8 @@ type config struct {
 // OpenType files. Pass bold or italic as nil to reuse regular for that style.
 //
 // It is how a chart is drawn in the application's own typeface: package
-// fynerefract/chart reads the faces off the Fyne theme and passes them here.
-// Without it a chart uses the same fonts every other refract raster does,
+// fynefigure/chart reads the faces off the Fyne theme and passes them here.
+// Without it a chart uses the same fonts every other figure raster does,
 // which is what makes its pixels comparable with an exported PNG.
 func Font(regular, bold, italic []byte) Option {
 	return func(c *config) { c.gg = append(c.gg, ggbackend.WithFont(regular, bold, italic)) }
@@ -39,7 +39,7 @@ func ScaleMode(m canvas.ImageScale) Option {
 // covers no more than f of the surface. Zero, the default, repaints the whole
 // frame every time.
 //
-// refract works out where a frame changed and offers the rasterizer the chance
+// figure works out where a frame changed and offers the rasterizer the chance
 // to repaint only that. It sounds like a saving and here it is not: the
 // rasterizer clears the damaged box and clips every drawing call to it, and its
 // clip is a mask it rasterizes across the surface and then samples per pixel —

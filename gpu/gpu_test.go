@@ -4,12 +4,12 @@ import (
 	"math"
 	"testing"
 
-	gputier "github.com/timzifer/fyne-refract/gpu"
-	"github.com/timzifer/refract"
-	ggbackend "github.com/timzifer/refract/backend/gg"
-	"github.com/timzifer/refract/data"
-	"github.com/timzifer/refract/geom"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	ggbackend "github.com/timzifer/figure/backend/gg"
+	"github.com/timzifer/figure/data"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/scale"
+	gputier "github.com/timzifer/fyne-figure/gpu"
 )
 
 // Whether the tier took depends on the machine: a runner with no Vulkan, Metal
@@ -52,7 +52,7 @@ func benchStream(b *testing.B, width, window, seed int, damage bool) {
 			b.Fatal(err)
 		}
 	}
-	p := refract.New(refract.Size(width, width*8/15))
+	p := figure.New(figure.Size(width, width*8/15))
 	p.X(scale.Linear(scale.Domain(0, float64(window))))
 	p.Y(scale.Linear(scale.Domain(0, 120)))
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y")))
@@ -86,9 +86,9 @@ func benchPan(b *testing.B, width int, damage bool) {
 		x[i] = t
 		y[i] = math.Sin(t) + 0.35*math.Sin(7.3*t) + 0.12*math.Sin(31*t)
 	}
-	src := refract.Float64Columns(map[string][]float64{"t": x, "signal": y})
+	src := figure.Float64Columns(map[string][]float64{"t": x, "signal": y})
 
-	p := refract.New(refract.Size(width, width*8/15), refract.Title("Signal"))
+	p := figure.New(figure.Size(width, width*8/15), figure.Title("Signal"))
 	p.Add(geom.Line(src, geom.X("t"), geom.Y("signal")))
 
 	live := open(b, p, width, damage)
@@ -105,9 +105,9 @@ func benchPan(b *testing.B, width int, damage bool) {
 	}
 }
 
-func open(b *testing.B, p *refract.Plot, width int, damage bool) *refract.Live {
+func open(b *testing.B, p *figure.Plot, width int, damage bool) *figure.Live {
 	b.Helper()
-	var target refract.Target = ggbackend.NewSurface()
+	var target figure.Target = ggbackend.NewSurface()
 	if !damage {
 		target = whole{ggbackend.NewSurface()}
 	}

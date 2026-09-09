@@ -1,4 +1,4 @@
-// Command demo shows refract charts in a Fyne window.
+// Command demo shows figure charts in a Fyne window.
 //
 //	go run ./cmd/demo
 //
@@ -13,7 +13,7 @@
 // follows the window, and a sliding window has nothing behind its tip to pan
 // to. chart.FollowPause is the other choice; see the Follow tab's comment.
 //
-// The third is the interaction refract grew in v1.7 and this widget wires:
+// The third is the interaction figure grew in v1.7 and this widget wires:
 // two charts that move together, a legend whose rows can be clicked off, a
 // crosshair painted over the finished chart, and a drag that marks out rows
 // instead of panning. None of it is on by default — a legend that always
@@ -34,18 +34,18 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
-	ggbackend "github.com/timzifer/refract/backend/gg"
-	"github.com/timzifer/refract/data"
-	"github.com/timzifer/refract/geom"
-	"github.com/timzifer/refract/palette"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	ggbackend "github.com/timzifer/figure/backend/gg"
+	"github.com/timzifer/figure/data"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/palette"
+	"github.com/timzifer/figure/scale"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 func main() {
 	a := app.New()
-	w := a.NewWindow("refract — Fyne")
+	w := a.NewWindow("figure — Fyne")
 	w.Resize(fyne.NewSize(960, 620))
 
 	live, animate := liveTab()
@@ -77,12 +77,12 @@ func main() {
 // signalTab is a chart with something to point at, and the two controls a
 // reader looks for.
 func signalTab() fyne.CanvasObject {
-	p := refract.New(
-		refract.Responsive(true),
-		refract.Size(900, 480),
-		refract.Title("Signal"),
-		refract.XTitle("t"),
-		refract.YTitle("amplitude"),
+	p := figure.New(
+		figure.Responsive(true),
+		figure.Size(900, 480),
+		figure.Title("Signal"),
+		figure.XTitle("t"),
+		figure.YTitle("amplitude"),
 	)
 	p.Add(
 		geom.Line(signal(4000), geom.X("t"), geom.Y("signal"),
@@ -96,7 +96,7 @@ func signalTab() fyne.CanvasObject {
 	c := chart.New(p, chart.TrackRows(true))
 
 	status := widget.NewLabel("Hover the chart.")
-	p.On(refract.Hover, func(ev refract.Event) {
+	p.On(figure.Hover, func(ev figure.Event) {
 		if !ev.Found {
 			status.SetText("Hover the chart.")
 			return
@@ -111,7 +111,7 @@ func signalTab() fyne.CanvasObject {
 		}
 	})
 	export := widget.NewButton("Export PNG", func() {
-		path := filepath.Join(os.TempDir(), "refract-demo.png")
+		path := filepath.Join(os.TempDir(), "figure-demo.png")
 		// The same plot through the same rasterizer: what lands in the file is
 		// what is on screen, which is the whole point of drawing it this way.
 		if err := p.Render(ggbackend.PNG(path)); err != nil {
@@ -134,7 +134,7 @@ func interactTab() fyne.CanvasObject {
 	// means the same thing in both.
 	top := chart.New(plotOf(src, "Signal — drag to select"),
 		chart.LegendToggle(true),
-		chart.DragMode(refract.DragSelects),
+		chart.DragMode(figure.DragSelects),
 	)
 	bottom := chart.New(plotOf(src, "The same rows, linked"),
 		chart.LegendToggle(true),
@@ -142,33 +142,33 @@ func interactTab() fyne.CanvasObject {
 
 	// The link, one line each way. It does not loop: SetView is not a reader
 	// moving anything, and reports nothing back.
-	top.OnViewChange(func(v refract.View) { _ = bottom.SetView(v) })
-	bottom.OnViewChange(func(v refract.View) { _ = top.SetView(v) })
+	top.OnViewChange(func(v figure.View) { _ = bottom.SetView(v) })
+	bottom.OnViewChange(func(v figure.View) { _ = top.SetView(v) })
 
 	// A crosshair is the cheapest thing a reader can be given for "which value
 	// is this". It is installed once and then moved: the overlay is a pointer
 	// whose fields the handler writes.
-	cross := &refract.Crosshair{}
+	cross := &figure.Crosshair{}
 	top.Overlay(cross)
 
 	status := widget.NewLabel("Drag a rectangle over the top chart. Click a legend row to hide a series.")
-	top.Plot().On(refract.Hover, func(ev refract.Event) {
+	top.Plot().On(figure.Hover, func(ev figure.Event) {
 		cross.At, cross.Show = ev.Hit.At, ev.Found && !ev.Hit.Kind.Guides()
 	})
 	// A selection is one event per layer under the rectangle. What it means is
-	// the caller's — refract counts the rows and stops there.
-	top.Plot().On(refract.Select, func(ev refract.Event) {
+	// the caller's — figure counts the rows and stops there.
+	top.Plot().On(figure.Select, func(ev figure.Event) {
 		status.SetText(fmt.Sprintf("%s: %d rows selected", ev.Hit.Series, len(ev.Rows)))
 	})
 
 	mode := widget.NewSelect([]string{"Select", "Zoom to band", "Pan"}, func(s string) {
 		switch s {
 		case "Select":
-			top.SetDragMode(refract.DragSelects)
+			top.SetDragMode(figure.DragSelects)
 		case "Zoom to band":
-			top.SetDragMode(refract.DragZooms)
+			top.SetDragMode(figure.DragZooms)
 		default:
-			top.SetDragMode(refract.DragPans)
+			top.SetDragMode(figure.DragPans)
 		}
 	})
 	mode.SetSelected("Select")
@@ -188,13 +188,13 @@ func interactTab() fyne.CanvasObject {
 
 // plotOf is two named series over one table, which is what gives the chart a
 // legend to click.
-func plotOf(src refract.Source, title string) *refract.Plot {
-	p := refract.New(
-		refract.Responsive(true),
-		refract.Size(900, 240),
-		refract.Title(title),
-		refract.XTitle("t"),
-		refract.YTitle("amplitude"),
+func plotOf(src figure.Source, title string) *figure.Plot {
+	p := figure.New(
+		figure.Responsive(true),
+		figure.Size(900, 240),
+		figure.Title(title),
+		figure.XTitle("t"),
+		figure.YTitle("amplitude"),
 	)
 	p.Add(
 		geom.Line(src, geom.X("t"), geom.Y("signal"),
@@ -213,11 +213,11 @@ func liveTab() (fyne.CanvasObject, func() (stop func())) {
 	st := data.NewStream("t", "y").Window(window)
 	seed(st, window)
 
-	p := refract.New(
-		refract.Responsive(true),
-		refract.Size(900, 480),
-		refract.Title("Live throughput"),
-		refract.YTitle("rows/s"),
+	p := figure.New(
+		figure.Responsive(true),
+		figure.Size(900, 480),
+		figure.Title("Live throughput"),
+		figure.YTitle("rows/s"),
 	)
 	// A pinned Y axis is what makes a live chart readable: one that rescales
 	// itself every frame turns every change into a redraw of everything, and
@@ -270,7 +270,7 @@ func throughput(t float64) float64 {
 	return 70 + 25*math.Sin(t/50) + 8*rand.Float64()
 }
 
-func signal(n int) refract.Source {
+func signal(n int) figure.Source {
 	x := make([]float64, n)
 	y := make([]float64, n)
 	carrier := make([]float64, n)
@@ -280,5 +280,5 @@ func signal(n int) refract.Source {
 		y[i] = math.Sin(t) + 0.35*math.Sin(7.3*t) + 0.12*math.Sin(31*t)
 		carrier[i] = 0.8 * math.Cos(t/1.7)
 	}
-	return refract.Float64Columns(map[string][]float64{"t": x, "signal": y, "carrier": carrier})
+	return figure.Float64Columns(map[string][]float64{"t": x, "signal": y, "carrier": carrier})
 }

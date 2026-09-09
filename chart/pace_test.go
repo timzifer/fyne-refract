@@ -7,8 +7,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // Fyne's desktop driver drains the whole event queue in one pass, so a drag
@@ -36,12 +36,12 @@ func TestABurstOfDragsCostsAFewFramesRatherThanOnePerEvent(t *testing.T) {
 	}
 }
 
-// Dropping a pan loses nothing: refract pans by the distance from the last
+// Dropping a pan loses nothing: figure pans by the distance from the last
 // position it was told about, so the next position it hears covers the whole
 // way, and the end of the gesture draws whatever is left over.
 //
 // The two do not land on the same float, and the difference is not this
-// package's. refract converts a pan through float32 device coordinates once
+// package's. figure converts a pan through float32 device coordinates once
 // per step, so ninety-seven pans of one pixel land about 0.7 of a pixel away
 // from one pan of ninety-seven — measured, and independent of any pacing. What
 // is asserted here is therefore that the gesture ends where it was aimed, to
@@ -92,7 +92,7 @@ func TestHoveringIsNotPaced(t *testing.T) {
 	c, win := shown(t, fyne.NewSize(500, 300), chart.FrameInterval(time.Second))
 
 	var hovers int
-	c.Plot().On(refract.Hover, func(refract.Event) { hovers++ })
+	c.Plot().On(figure.Hover, func(figure.Event) { hovers++ })
 	for i := range 20 {
 		test.MoveMouse(win.Canvas(), fyne.NewPos(100+float32(i)*5, 150))
 	}

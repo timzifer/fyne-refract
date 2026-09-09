@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne-refract/chart"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // A chart being dragged is rasterized coarser than the screen and stretched by

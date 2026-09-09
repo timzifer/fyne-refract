@@ -7,7 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	fynetheme "fyne.io/fyne/v2/theme"
-	"github.com/timzifer/fyne-refract/chart"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 func TestAChartFollowsTheApplicationsColours(t *testing.T) {

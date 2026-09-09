@@ -7,11 +7,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/data"
-	"github.com/timzifer/refract/geom"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/data"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/scale"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // A scale is trained, and training accumulates: a domain grows and never
@@ -143,7 +143,7 @@ func streamingChart(t *testing.T, opts ...chart.Option) (*chart.Chart, fyne.Wind
 	st := data.NewStream("t", "y").Window(100)
 	appendRows(t, st, 0, 100)
 
-	p := refract.New(refract.Size(400, 250))
+	p := figure.New(figure.Size(400, 250))
 	p.Y(scale.Linear(scale.Domain(0, 2)))
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y")))
 

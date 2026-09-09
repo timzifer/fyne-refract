@@ -9,13 +9,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 func TestATooltipSaysWhatIsUnderThePointer(t *testing.T) {
 	c := chart.New(plot(), chart.ThemeFont(false),
-		chart.TooltipFormat(func(h refract.Hit) string { return fmt.Sprintf("at %.2f", h.X) }))
+		chart.TooltipFormat(func(h figure.Hit) string { return fmt.Sprintf("at %.2f", h.X) }))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))
@@ -91,7 +91,7 @@ func TestATooltipTakesItsStyleFromTheOptions(t *testing.T) {
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))
 
-	got := chart.TipContent(c, refract.Hit{X: 1, Y: 2})
+	got := chart.TipContent(c, figure.Hit{X: 1, Y: 2})
 	if got.Style.Padding != want.Padding || got.Style.FontSize != want.FontSize {
 		t.Errorf("the tooltip's style is %+v, want the padding and size from TooltipLook", got.Style)
 	}
@@ -106,7 +106,7 @@ func TestATooltipContentCarriesItsOwnStyle(t *testing.T) {
 	red := color.NRGBA{R: 255, A: 255}
 	c := chart.New(plot(), chart.ThemeFont(false),
 		chart.TooltipLook(chart.TooltipStyle{Padding: 3}),
-		chart.TooltipContentFunc(func(h refract.Hit) chart.TooltipContent {
+		chart.TooltipContentFunc(func(h figure.Hit) chart.TooltipContent {
 			return chart.TooltipContent{
 				Text:  fmt.Sprintf("%.1f", h.X),
 				Style: chart.TooltipStyle{Text: red, Bold: true},
@@ -116,7 +116,7 @@ func TestATooltipContentCarriesItsOwnStyle(t *testing.T) {
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))
 
-	got := chart.TipContent(c, refract.Hit{X: 1.5})
+	got := chart.TipContent(c, figure.Hit{X: 1.5})
 	if got.Text != "1.5" {
 		t.Errorf("the tooltip says %q, want %q", got.Text, "1.5")
 	}
@@ -134,7 +134,7 @@ func TestATooltipContentCarriesItsOwnStyle(t *testing.T) {
 // A Tooltipper is the same extension point for a type rather than a function.
 type unitTip struct{ unit string }
 
-func (u unitTip) Tooltip(h refract.Hit) chart.TooltipContent {
+func (u unitTip) Tooltip(h figure.Hit) chart.TooltipContent {
 	return chart.TooltipContent{Text: fmt.Sprintf("%.0f %s", h.Y, u.unit)}
 }
 
@@ -144,7 +144,7 @@ func TestATooltipperReplacesTheFormat(t *testing.T) {
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))
 
-	if got := chart.TipContent(c, refract.Hit{Y: 7}).Text; got != "7 bar" {
+	if got := chart.TipContent(c, figure.Hit{Y: 7}).Text; got != "7 bar" {
 		t.Errorf("the tooltip says %q, want %q", got, "7 bar")
 	}
 }
@@ -154,7 +154,7 @@ func TestATooltipperReplacesTheFormat(t *testing.T) {
 func hoverAMark(t *testing.T, c *chart.Chart, win fyne.Window) bool {
 	t.Helper()
 	var found bool
-	c.Plot().On(refract.Hover, func(ev refract.Event) { found = found || ev.Found })
+	c.Plot().On(figure.Hover, func(ev figure.Event) { found = found || ev.Found })
 	for x := float32(60); x < 460 && !found; x += 8 {
 		for y := float32(40); y < 260 && !found; y += 8 {
 			test.MoveMouse(win.Canvas(), fyne.NewPos(x, y))
@@ -181,7 +181,7 @@ func tooltipImage(t *testing.T, c *chart.Chart) *canvas.Image {
 func shownTooltip(t *testing.T, label string) *canvas.Image {
 	t.Helper()
 	c := chart.New(plot(), chart.ThemeFont(false),
-		chart.TooltipFormat(func(refract.Hit) string { return label }))
+		chart.TooltipFormat(func(figure.Hit) string { return label }))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))

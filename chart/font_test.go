@@ -6,9 +6,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/geom"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // Fyne draws text through a shaper that falls back to another font for a
@@ -43,7 +43,7 @@ func titled(t *testing.T, title string) image.Image {
 	t.Helper()
 	test.NewTempApp(t)
 
-	p := refract.New(refract.Size(400, 250), refract.Title(title))
+	p := figure.New(figure.Size(400, 250), figure.Title(title))
 	p.Add(geom.Line(source(), geom.X("t"), geom.Y("y")))
 
 	c := chart.New(p)

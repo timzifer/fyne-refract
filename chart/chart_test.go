@@ -10,15 +10,15 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne-refract/chart"
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/data"
-	"github.com/timzifer/refract/geom"
-	"github.com/timzifer/refract/scale"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/data"
+	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/scale"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
-// What is asserted here is what refract reports, not what the chart looks
-// like: the widget's job is to turn Fyne's events into refract's, and a test
+// What is asserted here is what figure reports, not what the chart looks
+// like: the widget's job is to turn Fyne's events into figure's, and a test
 // that scraped pixels for it would be testing the rasterizer instead.
 
 func TestAChartIsOpenedAtTheSizeItIsLaidOutAt(t *testing.T) {
@@ -83,8 +83,8 @@ func TestADragPansAndDoesNotClick(t *testing.T) {
 	c, win := shown(t, fyne.NewSize(500, 300))
 
 	var clicks, pans int
-	c.Plot().On(refract.Click, func(refract.Event) { clicks++ })
-	c.Plot().On(refract.Pan, func(refract.Event) { pans++ })
+	c.Plot().On(figure.Click, func(figure.Event) { clicks++ })
+	c.Plot().On(figure.Pan, func(figure.Event) { pans++ })
 
 	// Fyne's own test.Drag reports a drag with no press behind it and never
 	// moves the pointer, so the press, the move and the release are sent the
@@ -116,7 +116,7 @@ func TestHoveringReportsWhatIsUnderThePointer(t *testing.T) {
 	c, win := shown(t, fyne.NewSize(500, 300))
 
 	var found bool
-	c.Plot().On(refract.Hover, func(ev refract.Event) { found = found || ev.Found })
+	c.Plot().On(figure.Hover, func(ev figure.Event) { found = found || ev.Found })
 
 	// Sweep the plot area: a line drawn across it is under the pointer
 	// somewhere along the way, wherever the margins happen to fall.
@@ -150,7 +150,7 @@ func TestAStreamIsFrozenBeforeEachFrame(t *testing.T) {
 		}
 	}
 
-	p := refract.New(refract.Size(400, 250))
+	p := figure.New(figure.Size(400, 250))
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y")))
 	c := chart.New(p, chart.ThemeFont(false))
 	c.Stream(st)
@@ -212,9 +212,9 @@ func frames(t *testing.T, c *chart.Chart) uint64 {
 	return c.Target().Frames()
 }
 
-func benchPlot() *refract.Plot { return plot() }
+func benchPlot() *figure.Plot { return plot() }
 
-func plot() *refract.Plot {
+func plot() *figure.Plot {
 	const n = 200
 	x := make([]float64, n)
 	y := make([]float64, n)
@@ -222,9 +222,9 @@ func plot() *refract.Plot {
 		v := float64(i) / 20
 		x[i], y[i] = v, math.Sin(v)
 	}
-	src := refract.Float64Columns(map[string][]float64{"t": x, "y": y})
+	src := figure.Float64Columns(map[string][]float64{"t": x, "y": y})
 
-	p := refract.New(refract.Size(400, 250), refract.Title("Signal"))
+	p := figure.New(figure.Size(400, 250), figure.Title("Signal"))
 	p.X(scale.Linear())
 	p.Add(geom.Line(src, geom.X("t"), geom.Y("y"), geom.Label("signal")))
 	return p
@@ -320,7 +320,7 @@ func TestAChartThatCouldNotOpenTriesAgain(t *testing.T) {
 	test.NewTempApp(t)
 
 	// A plot with no layers and no scales cannot be drawn, and says so.
-	p := refract.New(refract.Size(400, 250))
+	p := figure.New(figure.Size(400, 250))
 	c := chart.New(p, chart.ThemeFont(false))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
@@ -349,7 +349,7 @@ func TestAChartThatCouldNotOpenTriesAgain(t *testing.T) {
 	}
 }
 
-func source() refract.Source {
+func source() figure.Source {
 	const n = 100
 	x := make([]float64, n)
 	y := make([]float64, n)
@@ -357,5 +357,5 @@ func source() refract.Source {
 		v := float64(i) / 10
 		x[i], y[i] = v, math.Cos(v)
 	}
-	return refract.Float64Columns(map[string][]float64{"t": x, "y": y})
+	return figure.Float64Columns(map[string][]float64{"t": x, "y": y})
 }

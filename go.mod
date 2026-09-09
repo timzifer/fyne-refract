@@ -1,14 +1,14 @@
-module github.com/timzifer/fyne-refract
+module github.com/timzifer/fyne-figure
 
 go 1.25.0
 
-// refract's raster backend is pinned the way every refract module pins what it
+// figure's raster backend is pinned the way every figure module pins what it
 // adapts: this bridge is validated against exactly one release of the core and
 // one of the rasterizer, and says which.
 require (
 	fyne.io/fyne/v2 v2.7.3
-	github.com/timzifer/refract v1.7.0
-	github.com/timzifer/refract/backend/gg v1.7.0
+	github.com/timzifer/figure v0.8.1
+	github.com/timzifer/figure/backend/gg v0.8.0
 )
 
 require (

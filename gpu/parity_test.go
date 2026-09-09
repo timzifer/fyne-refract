@@ -15,13 +15,13 @@ import (
 	"math"
 	"testing"
 
-	gputier "github.com/timzifer/fyne-refract/gpu"
-	"github.com/timzifer/refract"
-	ggbackend "github.com/timzifer/refract/backend/gg"
-	"github.com/timzifer/refract/geom"
+	"github.com/timzifer/figure"
+	ggbackend "github.com/timzifer/figure/backend/gg"
+	"github.com/timzifer/figure/geom"
+	gputier "github.com/timzifer/fyne-figure/gpu"
 )
 
-// A chart drawn on the GPU should be the chart drawn on the CPU. refract's own
+// A chart drawn on the GPU should be the chart drawn on the CPU. figure's own
 // position is that the tier changes which coverage filler rasterizes the marks
 // and nothing else — this is what that claim costs in pixels, measured rather
 // than assumed, because a chart that looked different on a machine with a GPU
@@ -73,9 +73,9 @@ func render(t *testing.T) image.Image {
 		v := float64(i) / 20
 		x[i], y[i] = v, math.Sin(v)
 	}
-	src := refract.Float64Columns(map[string][]float64{"t": x, "y": y})
+	src := figure.Float64Columns(map[string][]float64{"t": x, "y": y})
 
-	p := refract.New(refract.Size(400, 250), refract.Title("Signal"))
+	p := figure.New(figure.Size(400, 250), figure.Title("Signal"))
 	p.Add(geom.Line(src, geom.X("t"), geom.Y("y")))
 
 	var buf bytes.Buffer

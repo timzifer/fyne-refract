@@ -1,15 +1,15 @@
 package chart
 
 import (
-	"github.com/timzifer/refract"
-	"github.com/timzifer/refract/ir"
+	"github.com/timzifer/figure"
+	"github.com/timzifer/figure/ir"
 )
 
-// The interaction surfaces refract grew in v1.7: an overlay layer to paint
+// The interaction surfaces figure offers: an overlay layer to paint
 // over a finished chart, layers a reader can turn off, and a view that can be
 // read off one chart and put into another.
 //
-// All three are refract's, and none of them is wired by refract — a legend
+// All three are figure's, and none of them is wired by figure — a legend
 // that always toggled, a crosshair nobody asked for and two charts that always
 // moved together would each be wrong somewhere. What a widget adds is the
 // wiring, the surface hold every redraw needs, and the repaint afterwards.
@@ -17,17 +17,17 @@ import (
 // overlays is the caller's overlay with the rubber band of a drag over it.
 //
 // Both are optional and either may be nil, which is why this exists rather
-// than [refract.Overlays]: the chart wants one installed thing whose parts it
+// than [figure.Overlays]: the chart wants one installed thing whose parts it
 // can change without reinstalling it, and a slice would have to be rebuilt
 // every time a drag started.
 type overlays struct {
-	user  refract.Overlay
-	brush *refract.Brush
+	user  figure.Overlay
+	brush *figure.Brush
 }
 
-// DrawOverlay implements [refract.Overlay]. The band goes last, so a selection
+// DrawOverlay implements [figure.Overlay]. The band goes last, so a selection
 // being dragged out is drawn over a crosshair rather than under it.
-func (o *overlays) DrawOverlay(b ir.Backend, f refract.OverlayFrame) {
+func (o *overlays) DrawOverlay(b ir.Backend, f figure.OverlayFrame) {
 	if o.user != nil {
 		o.user.DrawOverlay(b, f)
 	}
@@ -39,22 +39,22 @@ func (o *overlays) DrawOverlay(b ir.Backend, f refract.OverlayFrame) {
 // Overlay installs something to paint over the chart, replacing whatever was
 // there, and redraws. Passing nil removes it.
 //
-// It is [refract.Live.Overlay] with the chart's own hold on the surface and a
+// It is [figure.Live.Overlay] with the chart's own hold on the surface and a
 // repaint afterwards. The overlay is a pointer to a struct whose fields the
 // caller then moves — a crosshair's position, a tooltip's text — so installing
-// it once and writing to it from a [refract.Hover] handler is the intended
+// it once and writing to it from a [figure.Hover] handler is the intended
 // shape:
 //
-//	cross := &refract.Crosshair{}
+//	cross := &figure.Crosshair{}
 //	c.Overlay(cross)
-//	c.Plot().On(refract.Hover, func(ev refract.Event) {
+//	c.Plot().On(figure.Hover, func(ev figure.Event) {
 //		cross.At, cross.Show = ev.Hit.At, ev.Found
 //	})
 //
 // A hover redraws the chart while an overlay is installed and does not while
 // one is not, so a chart that has no use for one should not install a
 // do-nothing overlay to keep the code uniform.
-func (c *Chart) Overlay(o refract.Overlay) {
+func (c *Chart) Overlay(o figure.Overlay) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.overlay = o
@@ -63,17 +63,17 @@ func (c *Chart) Overlay(o refract.Overlay) {
 }
 
 // CurrentOverlay reports what the caller installed, or nil. It is not what
-// refract was given: the chart composes that overlay with the band of a drag.
-func (c *Chart) CurrentOverlay() refract.Overlay {
+// figure was given: the chart composes that overlay with the band of a drag.
+func (c *Chart) CurrentOverlay() figure.Overlay {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.overlay
 }
 
-// syncOverlay gives refract the overlay the chart's current state calls for,
+// syncOverlay gives figure the overlay the chart's current state calls for,
 // and nothing when that is nothing.
 //
-// The nothing matters. [refract.Input.Move] redraws the chart on every hover
+// The nothing matters. [figure.Input.Move] redraws the chart on every hover
 // while an overlay is installed, because a handler that just moved a crosshair
 // has no other way of being seen — so a chart carrying a permanently empty
 // overlay would pay a frame per pointer move for a layer that draws nothing.
@@ -99,7 +99,7 @@ func (c *Chart) syncOverlay() {
 // has nothing to outline, and a caller who passed [Brush] nil wants no band at
 // all.
 func (c *Chart) bands() bool {
-	return c.cfg.drag != refract.DragPans && c.brush != nil
+	return c.cfg.drag != figure.DragPans && c.brush != nil
 }
 
 // band puts the brush where the drag currently is, and reports whether there
@@ -116,7 +116,7 @@ func (c *Chart) band() bool {
 	return true
 }
 
-// endBand takes the rubber band away and settles what refract has installed.
+// endBand takes the rubber band away and settles what figure has installed.
 //
 // It is called before a release is reported, so that the frame the release
 // draws is already free of the band — and again whenever a Live is born, since
@@ -138,12 +138,12 @@ func (c *Chart) endBand() {
 // A drag in progress is not converted: the mode is read when the next press
 // starts.
 //
-// Switching *to* [refract.DragSelects] turns row tracking on and draws a frame,
+// Switching *to* [figure.DragSelects] turns row tracking on and draws a frame,
 // because a selection reads rows out of the hit index and an index that was not
 // tracking them holds none. Switching away leaves it on: a chart that has been
 // selected over once is a chart that will be again, and a caller who wants the
 // index small again rebuilds. See [Chart.tracksRows].
-func (c *Chart) SetDragMode(m refract.Drag) {
+func (c *Chart) SetDragMode(m figure.Drag) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	was := c.tracksRows()
@@ -169,7 +169,7 @@ func (c *Chart) SetDragMode(m refract.Drag) {
 // legend row, dimmed — the axes deliberately do not move, because a toggle is
 // a reading aid and an axis that rescaled on every click would make the two
 // readings incomparable. A caller who does want the axes to follow what is
-// left is saying something else, and says it with [refract.Plot.SetLayers] and
+// left is saying something else, and says it with [figure.Plot.SetLayers] and
 // [Chart.Rebuild].
 func (c *Chart) HideLayer(layer int, hide bool) error {
 	c.lock.Lock()
@@ -224,11 +224,11 @@ func (c *Chart) visibility(fn func() error) error {
 // the chart it was taken from and nothing else — put one into a chart with a
 // different number of panels and it is ignored. The zero View is what a chart
 // that has not been laid out yet reports.
-func (c *Chart) View() refract.View {
+func (c *Chart) View() figure.View {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.live == nil {
-		return refract.View{}
+		return figure.View{}
 	}
 	return c.live.View()
 }
@@ -239,7 +239,7 @@ func (c *Chart) View() refract.View {
 // It deliberately fires no [Chart.OnViewChange]: a view that was put there is
 // not a view the reader moved to, and a pair of charts that told each other
 // about their own changes would never stop.
-func (c *Chart) SetView(v refract.View) error {
+func (c *Chart) SetView(v figure.View) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.live == nil {
@@ -258,8 +258,8 @@ func (c *Chart) SetView(v refract.View) error {
 //
 // It is what links two charts, and the link is one line each way:
 //
-//	left.OnViewChange(func(v refract.View) { right.SetView(v) })
-//	right.OnViewChange(func(v refract.View) { left.SetView(v) })
+//	left.OnViewChange(func(v figure.View) { right.SetView(v) })
+//	right.OnViewChange(func(v figure.View) { left.SetView(v) })
 //
 // That does not loop: [Chart.SetView] is not a reader moving anything and
 // reports nothing back.
@@ -268,7 +268,7 @@ func (c *Chart) SetView(v refract.View) error {
 // belongs to held — so it must not call back into *that* chart. Another chart
 // is fine, which is the case this exists for. A pan reports on every step of
 // itself, at the rate the pacing lets frames through.
-func (c *Chart) OnViewChange(fn func(refract.View)) {
+func (c *Chart) OnViewChange(fn func(figure.View)) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.onView = fn

@@ -11,9 +11,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	fynetheme "fyne.io/fyne/v2/theme"
-	"github.com/timzifer/refract"
-	ggbackend "github.com/timzifer/refract/backend/gg"
-	"github.com/timzifer/refract/ir"
+	"github.com/timzifer/figure"
+	ggbackend "github.com/timzifer/figure/backend/gg"
+	"github.com/timzifer/figure/ir"
 )
 
 // TooltipStyle is how a tooltip is drawn. It is the styling half of a
@@ -100,14 +100,14 @@ type TooltipContent struct {
 // [TooltipFormat] and [TooltipContentFunc] are the function-shaped shortcuts
 // to the same thing.
 type Tooltipper interface {
-	Tooltip(h refract.Hit) TooltipContent
+	Tooltip(h figure.Hit) TooltipContent
 }
 
 // TooltipFunc adapts a plain function to [Tooltipper].
-type TooltipFunc func(h refract.Hit) TooltipContent
+type TooltipFunc func(h figure.Hit) TooltipContent
 
 // Tooltip calls f.
-func (f TooltipFunc) Tooltip(h refract.Hit) TooltipContent { return f(h) }
+func (f TooltipFunc) Tooltip(h figure.Hit) TooltipContent { return f(h) }
 
 var _ Tooltipper = TooltipFunc(nil)
 
@@ -225,7 +225,7 @@ func (t *tooltip) release() {
 
 // show places the tooltip for a hover, or hides it when the hover found
 // nothing.
-func (t *tooltip) show(ev refract.Event) {
+func (t *tooltip) show(ev figure.Event) {
 	// A plot keeps its handlers for good, so a chart that has been closed —
 	// and a second chart on the same plot — can still be told about a hover
 	// that is not its own. A chart with nothing open has nothing to say.
@@ -238,11 +238,11 @@ func (t *tooltip) show(ev refract.Event) {
 	}
 	if ev.Hit.Kind.Guides() {
 		// A hit on a legend row, a colourbar or a size key is not a hit on
-		// data. Since refract v1.7 a hover in the margins finds those, and
+		// data. A hover in the margins finds those, and
 		// they carry no X and no Y — a tooltip that described one would read
 		// "x 0, y 0" beside a series name, which is a lie about where the
 		// pointer is. A caller who does want to say something about a guide
-		// handles [refract.Hover] and reads [refract.Hit.Kind] themselves.
+		// handles [figure.Hover] and reads [figure.Hit.Kind] themselves.
 		t.hide()
 		return
 	}
@@ -305,7 +305,7 @@ func (t *tooltip) render(content TooltipContent, dpr float64) error {
 		descent = max32(descent, mt.Descent)
 	}
 	if width <= 0 || ascent+descent <= 0 {
-		return errors.New("fyne-refract/chart: the tooltip's text measured as nothing")
+		return errors.New("fyne-figure/chart: the tooltip's text measured as nothing")
 	}
 
 	spacing := st.LineSpacing
@@ -357,7 +357,7 @@ func (t *tooltip) render(content TooltipContent, dpr float64) error {
 
 	img := t.draw.Image()
 	if img == nil {
-		return errors.New("fyne-refract/chart: the tooltip drew no pixels")
+		return errors.New("fyne-figure/chart: the tooltip drew no pixels")
 	}
 	// A copy, because the surface's buffer belongs to the surface: the next
 	// tooltip opens it again, and Fyne's painter may still be reading this
@@ -377,7 +377,7 @@ func (t *tooltip) measurer(dpr float64) (ir.Backend, error) {
 	if t.meas == nil {
 		t.meas = t.surface()
 	}
-	b, err := t.meas.Open(1, 1, dpr)
+	b, err := t.meas.Open(ir.Surface{WidthPx: 1, HeightPx: 1, DPR: dpr})
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +394,7 @@ func (t *tooltip) open(w, h int, dpr float64) (ir.Backend, error) {
 	if t.draw == nil {
 		t.draw = t.surface()
 	}
-	return t.draw.Open(w, h, dpr)
+	return t.draw.Open(ir.Surface{WidthPx: w, HeightPx: h, DPR: dpr})
 }
 
 // surface returns a rasterizer in the tooltip's fonts.
@@ -422,7 +422,7 @@ func (t *tooltip) place(at fyne.Position, box fyne.Size) fyne.Position {
 
 // tipContent is what the chart says about a hit, with everything its options
 // and the Fyne theme leave to it filled in.
-func (c *Chart) tipContent(h refract.Hit) TooltipContent {
+func (c *Chart) tipContent(h figure.Hit) TooltipContent {
 	var out TooltipContent
 	if c.cfg.content != nil {
 		out = c.cfg.content(h)
