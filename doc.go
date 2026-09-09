@@ -1,5 +1,21 @@
 // Package fynerefract draws refract charts into a Fyne canvas object.
 //
+// # This module is now github.com/timzifer/fyne-figure
+//
+// refract was renamed to figure, and this bridge followed it. v0.3.1 is the
+// last release under this path; it is v0.3.0 plus this notice.
+//
+//	go get github.com/timzifer/fyne-figure
+//
+// Everything under this path keeps working and keeps its tags. It receives no
+// fixes and no features.
+//
+// Migrating is an import-path change and one method signature: an ir.Resizer
+// takes an ir.Surface rather than a width, a height and a device pixel ratio.
+// Nothing else in the API this bridge uses changed its name or its shape. See
+// https://github.com/timzifer/figure/releases/tag/v0.8.0 for the library
+// underneath.
+//
 //	t := fynerefract.New()
 //	live, err := p.Live(t)
 //	// ... live.Draw(); t.Present() ...

@@ -1,5 +1,22 @@
 # fyne-refract
 
+> ## This module is now [`github.com/timzifer/fyne-figure`](https://github.com/timzifer/fyne-figure)
+>
+> [refract was renamed to figure](https://github.com/timzifer/figure), and this
+> bridge followed it. **`v0.3.1` is the last release here** — it is `v0.3.0`
+> plus this notice.
+>
+> ```sh
+> go get github.com/timzifer/fyne-figure
+> ```
+>
+> Everything under this path keeps working and keeps its tags. It receives no
+> fixes and no features.
+>
+> Migrating is an import-path change and one method signature: an `ir.Resizer`
+> takes an `ir.Surface` rather than a width, a height and a device pixel ratio.
+> Nothing else in the API this bridge uses changed its name or its shape.
+
 [![CI](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne-refract/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne-refract.svg)](https://pkg.go.dev/github.com/timzifer/fyne-refract)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
