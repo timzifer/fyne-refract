@@ -79,8 +79,8 @@ github.com/timzifer/figure v0.9.0 h1:ShXYC87DqlP8zZ60r3KmvGta3N6H0ytCGEzZU4Yu5bE
 github.com/timzifer/figure v0.9.0/go.mod h1:q8KmlPjxcoOTgAe9gR4RNdTCwTb2bzA9CDlNIyzbXtE=
 github.com/timzifer/figure/backend/gg v0.9.0 h1:7b11BKwcyopjHrYdMv5gLxAFci5jrNJdrY+ouFb/FL8=
 github.com/timzifer/figure/backend/gg v0.9.0/go.mod h1:1Aepvp+gpmKwDX41JNzTAo0wbzVkNJ/SjjO/HQo/3Ns=
-github.com/timzifer/gg v0.52.6-figure.2 h1:Lkl5HpMkaxvmpY+u9Q9CuYGDD2XVG79m8efq5hpYrH4=
-github.com/timzifer/gg v0.52.6-figure.2/go.mod h1:mKiEGiR8lT7BCECfSoxRYBQ96HrDc0DHv/CNDxYQG5M=
+github.com/timzifer/gg v0.52.6-figure.3 h1:uC3Mpb1Tqbpsz2srlggODAts6g/BZO/Lp3Ltbc3i110=
+github.com/timzifer/gg v0.52.6-figure.3/go.mod h1:mKiEGiR8lT7BCECfSoxRYBQ96HrDc0DHv/CNDxYQG5M=
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=
 github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 golang.org/x/image v0.45.0 h1:FMb1nTbH5H9vF55SriQHgFw5GnNL9Jg6L25BwXKzhB0=
