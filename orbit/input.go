@@ -28,9 +28,14 @@ import (
 // finds it. A face is found anywhere inside it; this is for a line.
 const hoverSlop = 6
 
-// pointer is the layer that takes the pointer for a chart. A drag arrives
-// through Dragged, so it is not Mouseable: a press that does not move turns
-// nothing and has nothing to say.
+// pointer is the layer that takes the pointer for a chart.
+//
+// It became Mouseable when [Select] arrived. A drag arrives through Dragged, so
+// before that a press that did not move turned nothing and had nothing to say;
+// now it picks a row, and the press and the release are what tell a click from
+// the beginning of a turn. It is Mouseable rather than Tappable for the reason
+// package chart gives: a click already arrives here, and Tappable would deliver
+// it a second time.
 type pointer struct {
 	widget.BaseWidget
 	c *Chart
@@ -42,8 +47,15 @@ var (
 	_ fyne.Scrollable     = (*pointer)(nil)
 	_ fyne.DoubleTappable = (*pointer)(nil)
 	_ desktop.Hoverable   = (*pointer)(nil)
+	_ desktop.Mouseable   = (*pointer)(nil)
 	_ desktop.Cursorable  = (*pointer)(nil)
 )
+
+// clickSlop is how far a press may travel and still be a click rather than the
+// beginning of a turn, in logical pixels. Fyne has its own, larger slop before
+// it calls a movement a drag; this one exists so that the wobble of a firm
+// click on a trackpad does not pick a row and then turn the scene away from it.
+const clickSlop = 3
 
 func newPointer(c *Chart, on bool) *pointer {
 	p := &pointer{c: c}
@@ -96,6 +108,7 @@ func (c *Chart) Interactive() bool {
 func (c *Chart) leave() {
 	c.settle()
 	c.dragging, c.turning = false, noView
+	c.gestureEnds()
 	if c.hovering && c.onHover != nil {
 		c.hovering = false
 		c.onHover(interact.Hit{Row: -1}, false)
@@ -120,6 +133,7 @@ func (p *pointer) Dragged(ev *fyne.DragEvent) {
 	if c.turning == noView {
 		return
 	}
+	c.gestureBegins()
 	// A drag takes hold of the scene: the side facing the reader follows the
 	// pointer, as it does in three.js's OrbitControls, in Blender and in
 	// matplotlib. That is the camera going the other way round — a drag to
@@ -140,6 +154,43 @@ func (p *pointer) DragEnd() {
 	// A drag that has stopped has a last step nobody has drawn yet.
 	c.settle()
 	c.dragging, c.turning = false, noView
+	c.gestureEnds()
+	// The release that follows is the end of a turn rather than a click, and
+	// Fyne delivers DragEnd before it.
+	c.pressed = false
+}
+
+// MouseDown is called by Fyne. It is not part of the API.
+func (p *pointer) MouseDown(ev *desktop.MouseEvent) {
+	c := p.c
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if ev.Button != desktop.MouseButtonPrimary {
+		return
+	}
+	c.down, c.pressed = ev.Position, true
+}
+
+// MouseUp is called by Fyne. It is not part of the API.
+//
+// A release that neither turned the scene nor travelled is a click, and a click
+// picks a row. Everything else is the end of a gesture DragEnd has already
+// settled.
+func (p *pointer) MouseUp(ev *desktop.MouseEvent) {
+	c := p.c
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	pressed := c.pressed
+	c.pressed = false
+	if ev.Button != desktop.MouseButtonPrimary || !pressed || c.dragging {
+		return
+	}
+	if dx, dy := ev.Position.X-c.down.X, ev.Position.Y-c.down.Y; dx*dx+dy*dy > clickSlop*clickSlop {
+		return
+	}
+	c.clicked(ev.Position)
 }
 
 // Scrolled is called by Fyne. It is not part of the API.
@@ -168,6 +219,8 @@ func (p *pointer) Scrolled(ev *fyne.ScrollEvent) {
 	}
 	c.wheel += delta
 	c.wheelView = view
+	c.gestureBegins()
+	c.armWheelEnd()
 	c.pace()
 }
 

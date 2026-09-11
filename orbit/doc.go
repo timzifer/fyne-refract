@@ -58,6 +58,39 @@
 // which is the whole answer a pointer has in three dimensions. See
 // [Chart.OnHover].
 //
+// # Picking one out
+//
+// [Select] makes a click pick the row a hit reports, and rings it in **every**
+// view rather than in the one it was picked in. That is the interaction several
+// views exist for and the one a still picture cannot have: identify a
+// measurement from one angle and find it again from the others.
+//
+// figure holds no selection — its ADR 0062 says so and leaves this to the host
+// — so the selection is this package's, in the vocabulary a flat chart also
+// speaks. Linking the two is one line each way, exactly as the camera is:
+//
+//	scene.OnSelect(func(s fynefigure.Selection) { flat.SetSelection(s) })
+//	flat.OnSelect(func(s fynefigure.Selection) { scene.SetSelection(s) })
+//
+// A ring over a point the surface is in front of is drawn dashed, and one the
+// reader can see is solid. A scene hides its own far side, so without that a
+// ring says "this is here" when what is here is the near face, and the reader
+// reads off a position they did not pick. The answer is one subtraction over
+// two numbers figure hands out: how far away the row was drawn, and how near
+// the nearest thing at that point is.
+//
+// It is asked of the ring rather than of a pixel, and it carries over from the
+// last frame unless this one is one-sided, because a point on a rolling surface
+// genuinely goes in and out of cover as the scene turns — and a ring that
+// answered each frame on its own would change several times a second under a
+// drag, which says nothing about the data and a great deal about the
+// arithmetic.
+//
+// The rings are figure's own [three.Overlay], drawn after every view and
+// clipped by nothing. One is installed only while something is picked: a turn
+// with an overlay installed repaints the whole canvas rather than the cells
+// whose cameras moved, and an empty overlay would give that up for nothing.
+//
 // # Threading
 //
 // Every method here is called on Fyne's own goroutine, which is where the

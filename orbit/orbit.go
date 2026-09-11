@@ -90,6 +90,25 @@ type Chart struct {
 	onHover  func(h interact.Hit, found bool)
 	hovering bool
 
+	// The selection: what the reader picked, what rings it in every view, and
+	// who is told. See select.go.
+	sel      fynefigure.Selection
+	mk       *marks
+	onSelect func(fynefigure.Selection)
+
+	// down is where a press landed, and pressed that there is one, so that a
+	// release can tell a click from the end of a drag.
+	down    fyne.Position
+	pressed bool
+
+	// The level of detail: whether frames are drawn below the screen's
+	// resolution, whether a gesture has been reported begun, who is told, and
+	// what ends a wheel. See detail.go.
+	coarse     bool
+	gesturing  bool
+	onGesture  func(active bool)
+	wheelTimer *time.Timer
+
 	renderr error
 }
 
@@ -108,6 +127,7 @@ func New(p *three.Plot, opts ...Option) *Chart {
 		o(&c.cfg)
 	}
 	c.ptr = newPointer(c, c.cfg.interactive)
+	c.mk = &marks{ring: c.cfg.ring}
 	c.ExtendBaseWidget(c)
 	return c
 }
@@ -246,6 +266,7 @@ func (c *Chart) close() error {
 		c.timer = nil
 	}
 	c.stopGesture()
+	c.gestureEnds()
 	var err error
 	if c.live != nil {
 		err = c.live.Close()
@@ -287,7 +308,7 @@ func (c *Chart) resize(size fyne.Size) {
 			return
 		}
 		c.renderr = nil
-		c.live = live.TrackRows(c.cfg.trackRows)
+		c.live = live.TrackRows(c.tracksRows())
 		for i, cam := range c.cameras {
 			c.live.SetCamera(i, cam)
 		}
@@ -338,11 +359,14 @@ func (c *Chart) checkScale() {
 	if dpr == c.dpr {
 		return
 	}
-	if err := c.target.Render(func() error { return c.live.Rescale(dpr) }); err != nil {
-		c.renderr = err
-		return
-	}
+	// The screen's ratio is what is remembered; a coarse chart rasterizes at
+	// its part of it. See detail.go.
+	was := c.dpr
 	c.dpr = dpr
+	if err := c.target.Render(func() error { return c.live.Rescale(c.rasterScale()) }); err != nil {
+		c.dpr = was
+		c.renderr = err
+	}
 }
 
 // scaleFactor is the device pixel ratio the chart should rasterize at: the

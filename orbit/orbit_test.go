@@ -253,6 +253,15 @@ func twoViews() *three.Plot {
 	)
 }
 
+func fourViews() *three.Plot {
+	return three.New(three.Size(900, 480), three.Title("Response surface"), three.Columns(2)).Scene(scene()).Add(
+		three.View{Camera: three.Home(), Label: "three-quarter"},
+		three.View{Camera: three.LookAt(three.Elevation(1.45)), Label: "plan"},
+		three.View{Camera: three.LookAt(three.Azimuth(0), three.Elevation(0.02)), Label: "front"},
+		three.View{Camera: three.LookAt(three.Azimuth(-math.Pi/2), three.Elevation(0.02)), Label: "side"},
+	)
+}
+
 func scene() *three.Scene {
 	const n = 10
 	xs := make([]float64, 0, n*n)
