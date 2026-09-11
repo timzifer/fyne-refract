@@ -241,13 +241,18 @@ func sceneTab() fyne.CanvasObject {
 	// four ways, so a point picked in the plan is the same point in the
 	// three-quarter view and both profiles — which is the thing several views
 	// are for and the thing a still picture of one cannot do.
+	//
+	// The handler runs with the chart held, so it must not call back into it —
+	// c.ViewCount() here would be a deadlock against the click that is still
+	// being delivered. Everything it needs is read before it is registered.
+	views := len(labels)
 	c.OnSelect(func(sel fynefigure.Selection) {
 		if len(sel) == 0 {
 			status.SetText(hint)
 			return
 		}
 		status.SetText(fmt.Sprintf("row %d picked in the %s view, and marked in all %d",
-			sel[0].Row, labels[sel[0].View], c.ViewCount()))
+			sel[0].Row, labels[sel[0].View], views))
 	})
 
 	home := widget.NewButton("Home", func() {

@@ -106,15 +106,21 @@ func TestClickingNothingClearsTheSelection(t *testing.T) {
 // The point of the whole arrangement: one click, and the row is marked in
 // every view rather than in the one it was picked in.
 func TestOneClickRingsTheRowInEveryView(t *testing.T) {
-	c, _ := shown(t, fyne.NewSize(600, 300), twoViews(), orbit.Select(true))
+	// Four cameras, which is the figure the arrangement exists for: the
+	// three-quarter view an author designs at, and the plan and two elevations
+	// an engineering drawing has always had.
+	c, _ := shown(t, fyne.NewSize(620, 300), fourViews(), orbit.Select(true))
 
-	click(c, overSurface(t, c, 60, 290, 60, 240))
+	click(c, overSurface(t, c, 40, 300, 50, 140))
 	sel := c.Selection()
 	if len(sel) != 1 {
 		t.Fatalf("clicking picked %d rows, want 1", len(sel))
 	}
 
-	// Both views drew the row, which is what the rings are placed from.
+	// Every view drew the row, which is what the rings are placed from.
+	if c.ViewCount() != 4 {
+		t.Fatalf("the figure has %d views, want 4", c.ViewCount())
+	}
 	for view := range c.ViewCount() {
 		if _, ok := c.Live().Index().Locate(view, sel[0].Layer, sel[0].Row); !ok {
 			t.Errorf("view %d did not draw the picked row, so it can carry no ring", view)
