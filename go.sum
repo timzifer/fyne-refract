@@ -37,8 +37,6 @@ github.com/go-webgpu/webgpu v0.5.5 h1:pIrXzRg0LRlNjNmR+ZNo/ERN88YaObzbCY5oYhir5S
 github.com/go-webgpu/webgpu v0.5.5/go.mod h1:vgIuNTa1UlZ4njCGY6Pmp/0c5T5o2Ml2fQ0znLc7B98=
 github.com/godbus/dbus/v5 v5.1.0 h1:4KLkAxT3aOY8Li4FRJe/KvhoNFFxo0m6fNuFUO8QJUk=
 github.com/godbus/dbus/v5 v5.1.0/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
-github.com/gogpu/gg v0.52.5 h1:aDAxjwcUYWTaEcKiAVSX52FPtYKtMhuFYCQYK2SwJwE=
-github.com/gogpu/gg v0.52.5/go.mod h1:mKiEGiR8lT7BCECfSoxRYBQ96HrDc0DHv/CNDxYQG5M=
 github.com/gogpu/gpucontext v0.28.0 h1:W27+0PRnHLVRscDJ2L6r4B1JlaKjlV/EmL0Wxx8vGIc=
 github.com/gogpu/gpucontext v0.28.0/go.mod h1:5rpKj+DpixgAFm8ArBXFXOZQRbeJSFncVMsqyyA9Rhc=
 github.com/gogpu/gputypes v0.5.2 h1:3sbKI0+XW36Ekd3d4QhkbpdY7gbgMVgp8Q4+ZNdGhtE=
@@ -81,6 +79,8 @@ github.com/timzifer/figure v0.9.0 h1:ShXYC87DqlP8zZ60r3KmvGta3N6H0ytCGEzZU4Yu5bE
 github.com/timzifer/figure v0.9.0/go.mod h1:q8KmlPjxcoOTgAe9gR4RNdTCwTb2bzA9CDlNIyzbXtE=
 github.com/timzifer/figure/backend/gg v0.9.0 h1:7b11BKwcyopjHrYdMv5gLxAFci5jrNJdrY+ouFb/FL8=
 github.com/timzifer/figure/backend/gg v0.9.0/go.mod h1:1Aepvp+gpmKwDX41JNzTAo0wbzVkNJ/SjjO/HQo/3Ns=
+github.com/timzifer/gg v0.52.6-figure.1 h1:L5CWbSPEVWAuFrMyyW1mZ8maMyXU5dlBo5zA8VyWMKA=
+github.com/timzifer/gg v0.52.6-figure.1/go.mod h1:mKiEGiR8lT7BCECfSoxRYBQ96HrDc0DHv/CNDxYQG5M=
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=
 github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 golang.org/x/image v0.45.0 h1:FMb1nTbH5H9vF55SriQHgFw5GnNL9Jg6L25BwXKzhB0=
