@@ -101,6 +101,14 @@ type Chart struct {
 	down    fyne.Position
 	pressed bool
 
+	// The level of detail: whether frames are drawn below the screen's
+	// resolution, whether a gesture has been reported begun, who is told, and
+	// what ends a wheel. See detail.go.
+	coarse     bool
+	gesturing  bool
+	onGesture  func(active bool)
+	wheelTimer *time.Timer
+
 	renderr error
 }
 
@@ -258,6 +266,7 @@ func (c *Chart) close() error {
 		c.timer = nil
 	}
 	c.stopGesture()
+	c.gestureEnds()
 	var err error
 	if c.live != nil {
 		err = c.live.Close()
@@ -350,11 +359,14 @@ func (c *Chart) checkScale() {
 	if dpr == c.dpr {
 		return
 	}
-	if err := c.target.Render(func() error { return c.live.Rescale(dpr) }); err != nil {
-		c.renderr = err
-		return
-	}
+	// The screen's ratio is what is remembered; a coarse chart rasterizes at
+	// its part of it. See detail.go.
+	was := c.dpr
 	c.dpr = dpr
+	if err := c.target.Render(func() error { return c.live.Rescale(c.rasterScale()) }); err != nil {
+		c.dpr = was
+		c.renderr = err
+	}
 }
 
 // scaleFactor is the device pixel ratio the chart should rasterize at: the

@@ -26,6 +26,8 @@ type config struct {
 	selects     bool
 	multiSelect bool
 	ring        three.Highlight
+
+	detail float32
 }
 
 func defaults() config {
@@ -136,6 +138,15 @@ func Ring(h three.Highlight) Option {
 // drawn. Zero, the default, measures it: the last frame's own cost. A negative
 // value draws every event, which is what a test wants and a reader does not.
 func FrameInterval(d time.Duration) Option { return func(c *config) { c.interval = d } }
+
+// Detail sets the resolution, as a fraction of the screen's, the chart is drawn
+// at while a program has made it coarse with [Chart.SetCoarse]. 0.5 is a
+// quarter of the pixels and looks it; it is meant for a chart that is moving
+// beside the one a reader is turning, not for one anybody is reading.
+//
+// Anything outside (0, 1) leaves the chart sharp whatever it is told, which is
+// the default. See detail.go.
+func Detail(f float32) Option { return func(c *config) { c.detail = f } }
 
 // Cursor sets the pointer shown over the chart. The default leaves the pointer
 // alone.

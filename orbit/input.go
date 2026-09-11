@@ -108,6 +108,7 @@ func (c *Chart) Interactive() bool {
 func (c *Chart) leave() {
 	c.settle()
 	c.dragging, c.turning = false, noView
+	c.gestureEnds()
 	if c.hovering && c.onHover != nil {
 		c.hovering = false
 		c.onHover(interact.Hit{Row: -1}, false)
@@ -132,6 +133,7 @@ func (p *pointer) Dragged(ev *fyne.DragEvent) {
 	if c.turning == noView {
 		return
 	}
+	c.gestureBegins()
 	// A drag takes hold of the scene: the side facing the reader follows the
 	// pointer, as it does in three.js's OrbitControls, in Blender and in
 	// matplotlib. That is the camera going the other way round — a drag to
@@ -152,6 +154,7 @@ func (p *pointer) DragEnd() {
 	// A drag that has stopped has a last step nobody has drawn yet.
 	c.settle()
 	c.dragging, c.turning = false, noView
+	c.gestureEnds()
 	// The release that follows is the end of a turn rather than a click, and
 	// Fyne delivers DragEnd before it.
 	c.pressed = false
@@ -216,6 +219,8 @@ func (p *pointer) Scrolled(ev *fyne.ScrollEvent) {
 	}
 	c.wheel += delta
 	c.wheelView = view
+	c.gestureBegins()
+	c.armWheelEnd()
 	c.pace()
 }
 
