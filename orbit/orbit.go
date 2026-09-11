@@ -90,6 +90,17 @@ type Chart struct {
 	onHover  func(h interact.Hit, found bool)
 	hovering bool
 
+	// The selection: what the reader picked, what rings it in every view, and
+	// who is told. See select.go.
+	sel      fynefigure.Selection
+	mk       *marks
+	onSelect func(fynefigure.Selection)
+
+	// down is where a press landed, and pressed that there is one, so that a
+	// release can tell a click from the end of a drag.
+	down    fyne.Position
+	pressed bool
+
 	renderr error
 }
 
@@ -108,6 +119,7 @@ func New(p *three.Plot, opts ...Option) *Chart {
 		o(&c.cfg)
 	}
 	c.ptr = newPointer(c, c.cfg.interactive)
+	c.mk = &marks{ring: c.cfg.ring}
 	c.ExtendBaseWidget(c)
 	return c
 }
@@ -287,7 +299,7 @@ func (c *Chart) resize(size fyne.Size) {
 			return
 		}
 		c.renderr = nil
-		c.live = live.TrackRows(c.cfg.trackRows)
+		c.live = live.TrackRows(c.tracksRows())
 		for i, cam := range c.cameras {
 			c.live.SetCamera(i, cam)
 		}

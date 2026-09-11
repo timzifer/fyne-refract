@@ -21,8 +21,12 @@
 // tab is also the list of the switches.
 //
 // The fourth is a scene in three dimensions, which figure grew in v0.9: one
-// surface seen from two cameras. Drag a view to turn it, turn the wheel over
-// it to bring it closer, double click to put both back where they started.
+// surface seen from four cameras — the three-quarter view an author designs at
+// and the plan and two elevations an engineering drawing has always had. Drag a
+// view to turn it, turn the wheel over it to bring it closer, double click to
+// put them all back. Click a point and it is ringed in all four at once, which
+// is what several views are for: identifying a measurement from one angle and
+// finding it again from the others.
 package main
 
 import (
@@ -46,6 +50,7 @@ import (
 	"github.com/timzifer/figure/palette"
 	"github.com/timzifer/figure/scale"
 	"github.com/timzifer/figure/three"
+	fynefigure "github.com/timzifer/fyne_figure"
 	"github.com/timzifer/fyne_figure/chart"
 	"github.com/timzifer/fyne_figure/orbit"
 )
@@ -205,17 +210,19 @@ func sceneTab() fyne.CanvasObject {
 		Add(three.Surface(saddle(), geom.X("x"), geom.Y("y"), geom.Z("z"),
 			geom.Fill(palette.SkyBlue), geom.Label("response")))
 
-	labels := []string{"three-quarter", "plan"}
+	labels := []string{"three-quarter", "plan", "front", "side"}
 	p := three.New(three.Size(900, 480), three.Title("Response surface"), three.Columns(2)).
 		Scene(sc).
 		Add(
 			three.View{Camera: three.Home(), Label: labels[0]},
 			three.View{Camera: three.LookAt(three.Elevation(1.45)), Label: labels[1]},
+			three.View{Camera: three.LookAt(three.Azimuth(0), three.Elevation(0.02)), Label: labels[2]},
+			three.View{Camera: three.LookAt(three.Azimuth(-math.Pi/2), three.Elevation(0.02)), Label: labels[3]},
 		)
 
-	c := orbit.New(p, orbit.Interactive(true), orbit.TrackRows(true))
+	c := orbit.New(p, orbit.Interactive(true), orbit.Select(true))
 
-	hint := "Drag a view to turn it, turn the wheel over it to bring it closer, double click to go home."
+	hint := "Drag a view to turn it, click a point to mark it in all four, double click to go home."
 	status := widget.NewLabel(hint)
 	c.OnCamera(func(i int, cam three.Camera) {
 		status.SetText(fmt.Sprintf("%s   azimuth %.0f°   elevation %.0f°   zoom %.2f",
@@ -230,13 +237,27 @@ func sceneTab() fyne.CanvasObject {
 		}
 		status.SetText(fmt.Sprintf("%s   %s   row %d", labels[h.Panel], h.Series, h.Row))
 	})
+	// One click, four rings. A scene with four cameras is one chart looked at
+	// four ways, so a point picked in the plan is the same point in the
+	// three-quarter view and both profiles — which is the thing several views
+	// are for and the thing a still picture of one cannot do.
+	c.OnSelect(func(sel fynefigure.Selection) {
+		if len(sel) == 0 {
+			status.SetText(hint)
+			return
+		}
+		status.SetText(fmt.Sprintf("row %d picked in the %s view, and marked in all %d",
+			sel[0].Row, labels[sel[0].View], c.ViewCount()))
+	})
 
 	home := widget.NewButton("Home", func() {
 		if err := c.Home(); err != nil {
 			status.SetText("home: " + err.Error())
 		}
 	})
-	return container.NewBorder(nil, container.NewVBox(status, container.NewHBox(home)), nil, nil, c)
+	clear := widget.NewButton("Clear selection", func() { c.SetSelection(nil) })
+	return container.NewBorder(nil,
+		container.NewVBox(status, container.NewHBox(home, clear)), nil, nil, c)
 }
 
 // saddle is a response with a ridge one way and a trough the other: the shape

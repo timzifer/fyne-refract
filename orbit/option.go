@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
+	"github.com/timzifer/figure/three"
 )
 
 // Option configures a [Chart].
@@ -21,6 +22,10 @@ type config struct {
 	trackRows bool
 	interval  time.Duration
 	cursor    desktop.Cursor
+
+	selects     bool
+	multiSelect bool
+	ring        three.Highlight
 }
 
 func defaults() config {
@@ -99,6 +104,33 @@ func FollowTheme(on bool) Option { return func(c *config) { c.theme = on } }
 // [Chart.OnHover] can say. It is off by default because it is not free: every
 // layer records where each of its rows landed, every frame.
 func TrackRows(on bool) Option { return func(c *config) { c.trackRows = on } }
+
+// Select makes a click on a mark pick the row behind it, and a click on nothing
+// clear what was picked. It is off by default.
+//
+// A picked row gets a ring in **every** view rather than in the one it was
+// picked in, because a figure with several cameras is one scene looked at
+// several ways — which is the whole reason to draw one from more than one
+// angle, and the interaction figure's ADR 0062 named and left to the host.
+//
+// It implies row tracking. In a projected scene the source row is the entire
+// answer a pointer has, so a selection without it would pick nothing at all;
+// that is not a default anybody would want overridden.
+func Select(on bool) Option { return func(c *config) { c.selects = on } }
+
+// MultiSelect makes every click add to the selection or take its row back out,
+// rather than replacing it. It is off by default and does nothing without
+// [Select].
+func MultiSelect(on bool) Option { return func(c *config) { c.multiSelect = on } }
+
+// Ring sets what the mark round a picked row looks like. The zero value takes
+// the theme's label colour at six device units.
+//
+// Only the look is taken: where the rings go is the selection's, and a Ring
+// that named positions would have them overwritten on the next frame.
+func Ring(h three.Highlight) Option {
+	return func(c *config) { c.ring = three.Highlight{Radius: h.Radius, Color: h.Color, Width: h.Width} }
+}
 
 // FrameInterval sets how long a frame has to itself before the next turn is
 // drawn. Zero, the default, measures it: the last frame's own cost. A negative
