@@ -1,10 +1,12 @@
 // Command demo shows figure charts in a Fyne window.
 //
-//	cd cmd/demo && go run .
+//	cd cmd/demo && go run -ldflags=-linkmode=external .
 //
 // It is a module of its own so that it can import the GPU tier, which is
 // nested inside the widget's module and so outside its graph. See go.mod
-// beside this file.
+// beside this file. The linker flag is what Linux needs to put the tier and
+// Fyne's cgo driver in one binary, and does nothing anywhere else; see the
+// note on DEMO_LDFLAGS in .github/workflows/ci.yml.
 //
 // Two tabs. The first is a still signal: hover to see what is under the
 // pointer, drag to pan, turn the wheel to zoom about it, double click to go

@@ -14,6 +14,14 @@ env:
   # themselves need no display: Fyne's test driver paints in software.
   FYNE_DEPS: libgl1-mesa-dev xorg-dev libxkbcommon-dev
 
+  # The demo links the GPU tier, whose foreign-function layer reaches libdl and
+  # libc through //go:cgo_import_dynamic. On Linux with cgo on — which Fyne's
+  # desktop driver requires — Go picks its internal linker, which cannot resolve
+  # those: "unhandled relocation for goffi_dlopen (SDYNIMPORT)". The C linker
+  # can. Elsewhere Fyne's driver already forces external linking and this is a
+  # no-op. Only binaries need it; vet and govulncheck never link.
+  DEMO_LDFLAGS: -ldflags=-linkmode=external
+
 jobs:
   check:
     name: build, vet and test
@@ -54,19 +62,19 @@ jobs:
         run: |
           go build ./...
           (cd gpu && go build ./...)
-          (cd cmd/demo && go build ./...)
+          (cd cmd/demo && go build $DEMO_LDFLAGS ./...)
 
       - name: test
         run: |
           go test ./...
           (cd gpu && go test ./...)
-          (cd cmd/demo && go test ./...)
+          (cd cmd/demo && go test $DEMO_LDFLAGS ./...)
 
       - name: test with the race detector
         run: |
           go test -race ./...
           (cd gpu && go test -race ./...)
-          (cd cmd/demo && go test -race ./...)
+          (cd cmd/demo && go test -race $DEMO_LDFLAGS ./...)
 
   nocgo:
     name: the library builds without cgo
@@ -105,7 +113,7 @@ jobs:
           sudo apt-get install -y $FYNE_DEPS
       - run: |
           go build ./...
-          (cd cmd/demo && go build ./...)
+          (cd cmd/demo && go build $DEMO_LDFLAGS ./...)
 
   vuln:
     name: govulncheck
