@@ -52,10 +52,11 @@ func (c *Chart) SetSelection(sel fynefigure.Selection) {
 // without drawing, reporting whether anything changed. The lock is held by the
 // caller.
 func (c *Chart) applySelection(sel fynefigure.Selection) bool {
+	sel = c.localise(sel)
 	if c.sel.Equal(sel) {
 		return false
 	}
-	c.sel = sel.Clone()
+	c.sel = sel
 	c.syncOverlay()
 	return true
 }
@@ -174,6 +175,60 @@ func (c *Chart) clicked(pos fyne.Position) {
 	if c.onSelect != nil {
 		c.onSelect(c.sel.Clone())
 	}
+}
+
+// localise turns rows another chart named into rows this scene can place.
+//
+// A ref that came from a flat chart names a layer and a row of *that* chart's
+// table, which mean nothing here; what crosses is the key. So a ref with a key
+// and no row of ours is looked up in the scene's own layers, once, when the
+// selection arrives — rather than on every frame, which is what drawing it
+// would otherwise cost. A key nothing here answers to is kept as it came: the
+// scene cannot draw it, and dropping it would lose it on the way back.
+func (c *Chart) localise(sel fynefigure.Selection) fynefigure.Selection {
+	out := sel.Clone()
+	for i, ref := range out {
+		if ref.Key == "" || c.keyOf(ref.View, ref.Layer, ref.Row) == ref.Key {
+			continue
+		}
+		if layer, row, ok := c.rowOf(ref.Key); ok {
+			out[i].Layer, out[i].Row = layer, row
+		}
+	}
+	return out
+}
+
+// rowOf finds the layer and row one key names in the scene, or reports that
+// nothing here answers to it.
+//
+// It walks the scene's layers rather than the views', because a row is a fact
+// about the data and every view of one scene draws the same rows. The first
+// layer that knows the key wins, which is the same rule a flat chart follows.
+func (c *Chart) rowOf(key string) (layer, row int, ok bool) {
+	sc := c.plot.CurrentScene()
+	if sc == nil {
+		return 0, 0, false
+	}
+	for i, l := range sc.Layers() {
+		d, isDesc := l.(three.Describer)
+		if !isDesc {
+			continue
+		}
+		desc := d.Describe()
+		if desc.Key == "" || desc.Source == nil {
+			continue
+		}
+		labels, has := data.Labels(desc.Source, desc.Key)
+		if !has {
+			continue
+		}
+		for r, name := range labels {
+			if name == key {
+				return i, r, true
+			}
+		}
+	}
+	return 0, 0, false
 }
 
 // keyOf reads what a layer of one view calls one of its rows, or "" for a layer
