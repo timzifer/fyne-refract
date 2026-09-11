@@ -61,6 +61,7 @@ import (
 	"github.com/timzifer/figure/three"
 	fynefigure "github.com/timzifer/fyne_figure"
 	"github.com/timzifer/fyne_figure/chart"
+	_ "github.com/timzifer/fyne_figure/gpu"
 	"github.com/timzifer/fyne_figure/orbit"
 )
 
