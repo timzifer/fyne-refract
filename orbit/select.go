@@ -230,10 +230,10 @@ type marks struct {
 	views int
 
 	// ring is what draws, kept rather than made per frame — a selection is
-	// redrawn on every frame of a drag.
+	// redrawn on every frame of a drag; near is the scratch the occlusion test
+	// gathers into, kept for the same reason.
 	ring three.Highlight
-
-	at []ir.Point
+	near []interact.RowRef
 }
 
 // DrawOverlay implements [three.Overlay].
@@ -241,7 +241,7 @@ func (m *marks) DrawOverlay(b ir.Backend, f three.OverlayFrame) {
 	if len(m.sel) == 0 || m.idx == nil {
 		return
 	}
-	m.at = m.at[:0]
+	m.ring.Marks = m.ring.Marks[:0]
 	for _, ref := range m.sel {
 		if ref.Layer < 0 || ref.Row < 0 {
 			// A row that came from a flat chart names a layer of *that* chart.
@@ -254,14 +254,60 @@ func (m *marks) DrawOverlay(b ir.Backend, f three.OverlayFrame) {
 		// point: one scene looked at four ways, and one measurement marked in
 		// all four.
 		for view := range m.views {
-			if at, ok := m.idx.Locate(view, ref.Layer, ref.Row); ok {
-				m.at = append(m.at, at)
+			at, ok := m.idx.Locate(view, ref.Layer, ref.Row)
+			if !ok {
+				continue
 			}
+			mine, deep := m.depthOf(view, ref)
+			m.ring.Marks = append(m.ring.Marks, three.Mark{
+				At:     at,
+				Hidden: m.hiddenAt(at, mine, deep),
+			})
 		}
 	}
-	if len(m.at) == 0 {
+	if len(m.ring.Marks) == 0 {
 		return
 	}
-	m.ring.At, m.ring.Data, m.ring.View = m.at, nil, -1
+	m.ring.View = -1
 	m.ring.DrawOverlay(b, f)
 }
+
+// hiddenAt reports whether something in the scene is in front of where a row
+// landed in one view.
+//
+// It is one subtraction over two numbers figure hands out. The row says how far
+// away it was drawn, and a hit at its position says how near the nearest thing
+// there is — a projected scene is painted back to front, so the topmost mark at
+// a point is the nearest one. If that is nearer than the row, the row is behind
+// it.
+//
+// The tolerance is there because a face and the row it carries are the same
+// primitive at the same depth, and a float32 depth carries the same value two
+// ways round a subtraction.
+func (m *marks) hiddenAt(at ir.Point, mine float64, deep bool) bool {
+	if !deep {
+		return false
+	}
+	h, ok := m.idx.At(at, 0)
+	if !ok || !h.Deep {
+		return false
+	}
+	return h.Depth < mine-occlusionEpsilon
+}
+
+// depthOf is how far the scene drew one row in one view, and whether it said.
+func (m *marks) depthOf(view int, ref fynefigure.Ref) (float64, bool) {
+	m.near = m.idx.RowsOf(view, ref.Layer, m.near[:0])
+	for _, r := range m.near {
+		if r.Row == ref.Row {
+			return r.Depth, r.Deep
+		}
+	}
+	return 0, false
+}
+
+// occlusionEpsilon is how much nearer a mark has to be to count as being in
+// front. The depth a scene sorts by is a float32, so a face and the row it
+// carries can differ in the last bit without either being in front of the
+// other.
+const occlusionEpsilon = 1e-6

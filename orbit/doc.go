@@ -72,6 +72,13 @@
 //	scene.OnSelect(func(s fynefigure.Selection) { flat.SetSelection(s) })
 //	flat.OnSelect(func(s fynefigure.Selection) { scene.SetSelection(s) })
 //
+// A ring over a point the surface is in front of is drawn dashed, and one the
+// reader can see is solid. A scene hides its own far side, so without that a
+// ring says "this is here" when what is here is the near face, and the reader
+// reads off a position they did not pick. The answer is one subtraction over
+// two numbers figure hands out: how far away the row was drawn, and how near
+// the nearest thing at that point is.
+//
 // The rings are figure's own [three.Overlay], drawn after every view and
 // clipped by nothing. One is installed only while something is picked: a turn
 // with an overlay installed repaints the whole canvas rather than the cells

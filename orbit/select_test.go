@@ -199,3 +199,74 @@ func pixels(t *testing.T, c *orbit.Chart) uint64 {
 	}
 	return sum
 }
+
+// A scene hides its own far side, and a ring over a point on the far side has
+// to say so — otherwise the reader takes a position off the near face that is
+// not the one they picked.
+func TestARingOnTheFarSideOfTheSurfaceIsMarkedHidden(t *testing.T) {
+	c, _ := shown(t, fyne.NewSize(500, 300), plot(), orbit.Select(true))
+
+	// Find a row the surface is currently in front of, and one it is not.
+	// Which rows those are is a fact about the camera, so they are read out of
+	// the frame that was just drawn rather than guessed at.
+	idx := c.Live().Index()
+	var behind, plain int = -1, -1
+	for _, r := range idx.RowsOf(0, 0, nil) {
+		if !r.Deep {
+			continue
+		}
+		h, ok := idx.At(r.At, 0)
+		if !ok || !h.Deep {
+			continue
+		}
+		if h.Depth < r.Depth-1e-6 {
+			if behind < 0 {
+				behind = r.Row
+			}
+		} else if plain < 0 {
+			plain = r.Row
+		}
+	}
+	if behind < 0 || plain < 0 {
+		t.Fatalf("the scene has no row behind another (%d) or none in the open (%d)", behind, plain)
+	}
+
+	c.SetSelection(fynefigure.Selection{{View: 0, Layer: 0, Row: behind}})
+	if total, hidden := orbit.SelectionRings(c); total == 0 || hidden == 0 {
+		t.Errorf("a row on the far side drew %d rings of which %d hidden, want at least one of each",
+			total, hidden)
+	}
+
+	c.SetSelection(fynefigure.Selection{{View: 0, Layer: 0, Row: plain}})
+	if total, hidden := orbit.SelectionRings(c); total == 0 || hidden != 0 {
+		t.Errorf("a row in the open drew %d rings of which %d hidden, want none hidden", total, hidden)
+	}
+}
+
+// Turning the scene changes which rows are hidden, and the rings follow —
+// because they are resolved while the frame is drawn rather than when the
+// selection changed.
+func TestTurningTheSceneChangesWhichRingsAreHidden(t *testing.T) {
+	c, _ := shown(t, fyne.NewSize(500, 300), plot(), orbit.Select(true))
+
+	idx := c.Live().Index()
+	rows := idx.RowsOf(0, 0, nil)
+	if len(rows) == 0 {
+		t.Fatal("the scene reported no rows")
+	}
+	sel := make(fynefigure.Selection, 0, len(rows))
+	for _, r := range rows {
+		sel = append(sel, fynefigure.Ref{View: 0, Layer: 0, Row: r.Row})
+	}
+	c.SetSelection(sel)
+
+	seen := map[int]bool{}
+	for range 8 {
+		drag(c, fyne.NewPos(250, 150), fyne.NewDelta(30, 0))
+		_, hidden := orbit.SelectionRings(c)
+		seen[hidden] = true
+	}
+	if len(seen) < 2 {
+		t.Errorf("turning the scene right round left the hidden count at %v throughout", seen)
+	}
+}
