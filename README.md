@@ -1,7 +1,7 @@
 # fyne-figure
 
-[![CI](https://github.com/timzifer/fyne-figure/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne-figure/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne-figure.svg)](https://pkg.go.dev/github.com/timzifer/fyne-figure)
+[![CI](https://github.com/timzifer/fyne_figure/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne_figure/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne_figure.svg)](https://pkg.go.dev/github.com/timzifer/fyne_figure)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [figure](https://github.com/timzifer/figure) charts in a [Fyne](https://fyne.io) app.
@@ -18,8 +18,8 @@ pointer, resets the view on a double click, follows its own size and the
 application's colours, and shows a tooltip for the mark under the pointer.
 
 ```sh
-go get github.com/timzifer/fyne-figure
-go run github.com/timzifer/fyne-figure/cmd/demo@latest
+go get github.com/timzifer/fyne_figure
+go run github.com/timzifer/fyne_figure/cmd/demo@latest
 ```
 
 ## What is in here
@@ -28,9 +28,10 @@ go run github.com/timzifer/fyne-figure/cmd/demo@latest
 |---|---|
 | `fynefigure` | an `ir.Target` that rasterizes a chart and shows it in a `canvas.Raster` |
 | `fynefigure/chart` | the widget: the plot, the pointer, the tooltip, the theme, the stream |
+| `fynefigure/orbit` | the widget for a scene in three dimensions: the cameras, the pointer that turns them |
 
 The split is figure's own, between `backend/window` and `backend/window/show`:
-one draws, the other steers. A backend must not know what a scale or a panel
+one draws, the others steer. A backend must not know what a scale or a panel
 is, and everything in `chart` is about scales and panels.
 
 ## Why it draws the way it does
@@ -261,6 +262,55 @@ a chart puts numbers in front of a reader. Drawing the tooltip through the same
 rasterizer as the axis beside it gives it the same coverage and the same
 typeface, and brings multi-line labels with it.
 
+## A scene in three dimensions
+
+figure v0.9 draws a chart whose x, y and z are all data — a surface over a
+grid, a trajectory through a volume, bars over two categoricals — in its
+package `three`. It deliberately ships no loop to turn one: a camera is a
+value, `three.Orbit` and `three.Dolly` are pure functions from one to another,
+and the pointer is the host's. `orbit` is that host's side for Fyne.
+
+```go
+sc := three.NewScene(three.XTitle("x"), three.YTitle("y"), three.ZTitle("gain"))
+sc.Add(three.Surface(src, geom.X("x"), geom.Y("y"), geom.Z("gain")))
+
+p := three.New(three.Title("Response")).Scene(sc)
+w.SetContent(orbit.New(p))
+```
+
+A drag orbits the scene, the wheel brings it closer, a double click puts it
+back at the camera its author chose. It follows its size and the application's
+colours the way the flat widget does, through the same rasterizer.
+
+```go
+c := orbit.New(p,
+    orbit.PerPixel(0.008),     // radians of turn per pixel of drag
+    orbit.WheelScale(4),       // dolly per unit of Fyne's scroll
+    orbit.Together(false),     // a drag turns the view it started in
+    orbit.TrackRows(true),     // Hit.Row on every hover
+)
+c.OnHover(func(h interact.Hit, found bool) { /* h.Panel is the view */ })
+c.OnCamera(func(view int, cam three.Camera) { /* a reader moved it */ })
+```
+
+A plot with several views — one scene seen as a three-quarter, a plan and two
+profiles — turns the view the gesture started in and leaves the others still,
+so a turned view can be compared with a fixed one. `orbit.Together(true)`
+turns them all by the same amount instead. Two widgets are linked the way two
+flat charts are, one line each way; `SetCamera` reports nothing back, so it
+does not loop:
+
+```go
+left.OnCamera(func(i int, cam three.Camera) { _ = right.SetCamera(i, cam) })
+right.OnCamera(func(i int, cam three.Camera) { _ = left.SetCamera(i, cam) })
+```
+
+A hover in a projected scene has no x and y to report — a device point in a
+turned cube does not resolve to a pair of values — so it says which view,
+which layer and, with rows tracked, which source row. That is figure's answer
+too, and the reason `orbit` has no tooltip of its own: what a row means is the
+caller's.
+
 ## Pacing
 
 Fyne's desktop driver drains the whole operating-system event queue in one
@@ -332,7 +382,7 @@ There is a GPU tier, in `fyne-figure/gpu`, and it is worth having:
 One blank import turns it on:
 
 ```go
-import _ "github.com/timzifer/fyne-figure/gpu"
+import _ "github.com/timzifer/fyne_figure/gpu"
 ```
 
 A machine with no usable device falls back to the CPU rasterizer, and
@@ -391,8 +441,8 @@ the defaults, and what to know before changing them.
 
 ## Versions
 
-`fyne.io/fyne/v2` v2.7.3, `github.com/timzifer/figure` v0.8.1 and its raster
-backend at `backend/gg/v0.8.0`, pinned exactly — a release of this bridge is
+`fyne.io/fyne/v2` v2.7.3, `github.com/timzifer/figure` v0.9.0 and its raster
+backend at `backend/gg/v0.9.0`, pinned exactly — a release of this bridge is
 validated against one release of each and says which.
 
 figure and its rasterizer are cgo-free; Fyne's desktop driver is not, so a

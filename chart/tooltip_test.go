@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
 	"github.com/timzifer/figure"
-	"github.com/timzifer/fyne-figure/chart"
+	"github.com/timzifer/fyne_figure/chart"
 )
 
 func TestATooltipSaysWhatIsUnderThePointer(t *testing.T) {

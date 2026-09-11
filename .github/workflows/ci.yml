@@ -79,7 +79,7 @@ jobs:
       - name: build without cgo
         env:
           CGO_ENABLED: "0"
-        run: go build . ./chart
+        run: go build . ./chart ./orbit
 
   minimum:
     name: builds on the Go version go.mod names

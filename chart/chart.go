@@ -11,7 +11,8 @@ import (
 	"github.com/timzifer/figure"
 	"github.com/timzifer/figure/data"
 	"github.com/timzifer/figure/scale"
-	fynefigure "github.com/timzifer/fyne-figure"
+	fynefigure "github.com/timzifer/fyne_figure"
+	"github.com/timzifer/fyne_figure/internal/look"
 )
 
 // Chart is a figure plot as a Fyne widget.
@@ -109,7 +110,7 @@ type Chart struct {
 
 	// themed remembers what the chart was last built for, so that a settings
 	// change that touched neither is not a rebuild.
-	themed themeState
+	themed look.State
 
 	// hooked records that the plot carries this chart's event handlers. They
 	// belong to the plot rather than to the chart, so they outlive a chart

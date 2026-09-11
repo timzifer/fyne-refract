@@ -9,7 +9,7 @@ import (
 	"github.com/timzifer/figure/data"
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/scale"
-	fynefigure "github.com/timzifer/fyne-figure"
+	fynefigure "github.com/timzifer/fyne_figure"
 )
 
 // What a frame costs, and whether repainting only the part of it that changed

@@ -9,7 +9,7 @@ import (
 	"github.com/timzifer/figure/data"
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/scale"
-	gputier "github.com/timzifer/fyne-figure/gpu"
+	gputier "github.com/timzifer/fyne_figure/gpu"
 )
 
 // Whether the tier took depends on the machine: a runner with no Vulkan, Metal

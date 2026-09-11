@@ -11,7 +11,7 @@ import (
 	"github.com/timzifer/figure/data"
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/scale"
-	"github.com/timzifer/fyne-figure/chart"
+	"github.com/timzifer/fyne_figure/chart"
 )
 
 // A scale is trained, and training accumulates: a domain grows and never

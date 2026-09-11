@@ -77,10 +77,10 @@ github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef h1:Ch6Q+AZUxDBCVqd
 github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef/go.mod h1:nXTWP6+gD5+LUJ8krVhhoeHjvHTutPxMYl5SvkcnJNE=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/timzifer/figure v0.8.1 h1:pE97BsPJmassFrh4RikGpHKpzQDd95veForphHBIaGA=
-github.com/timzifer/figure v0.8.1/go.mod h1:q8KmlPjxcoOTgAe9gR4RNdTCwTb2bzA9CDlNIyzbXtE=
-github.com/timzifer/figure/backend/gg v0.8.0 h1:eAgtwSEFASLEQia0EHlCXkcsTu5Xm+8fH/5Wp4ipa6Y=
-github.com/timzifer/figure/backend/gg v0.8.0/go.mod h1:ZTL471jdPWYlxcHom0xyldiD6z3nvrx28aoOGvqgmKg=
+github.com/timzifer/figure v0.9.0 h1:ShXYC87DqlP8zZ60r3KmvGta3N6H0ytCGEzZU4Yu5bE=
+github.com/timzifer/figure v0.9.0/go.mod h1:q8KmlPjxcoOTgAe9gR4RNdTCwTb2bzA9CDlNIyzbXtE=
+github.com/timzifer/figure/backend/gg v0.9.0 h1:7b11BKwcyopjHrYdMv5gLxAFci5jrNJdrY+ouFb/FL8=
+github.com/timzifer/figure/backend/gg v0.9.0/go.mod h1:1Aepvp+gpmKwDX41JNzTAo0wbzVkNJ/SjjO/HQo/3Ns=
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=
 github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 golang.org/x/image v0.45.0 h1:FMb1nTbH5H9vF55SriQHgFw5GnNL9Jg6L25BwXKzhB0=

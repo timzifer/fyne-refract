@@ -27,8 +27,8 @@
 // passed anywhere:
 //
 //	import (
-//	    "github.com/timzifer/fyne-figure/chart"
-//	    _ "github.com/timzifer/fyne-figure/gpu" // opt into the GPU tier
+//	    "github.com/timzifer/fyne_figure/chart"
+//	    _ "github.com/timzifer/fyne_figure/gpu" // opt into the GPU tier
 //	)
 //
 // The import has to happen before the first chart is drawn, which a blank

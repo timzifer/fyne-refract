@@ -8,7 +8,8 @@
 // It is an [ir.Target] like any other, and what it adds is that the pixels end
 // up in a Fyne widget tree. The package next door, fynefigure/chart, is what
 // joins one to a *figure.Plot and turns Fyne's mouse events into hovers, pans
-// and zooms — a backend must not know what a scale or a panel is, so steering
+// and zooms, and fynefigure/orbit does the same for a *three.Plot, turning its
+// cameras — a backend must not know what a scale or a panel is, so steering
 // is a separate package for the same reason figure keeps backend/window and
 // backend/window/show apart.
 //

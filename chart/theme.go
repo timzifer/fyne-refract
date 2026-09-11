@@ -1,24 +1,10 @@
 package chart
 
 import (
-	"image/color"
-
 	"fyne.io/fyne/v2"
-	fynetheme "fyne.io/fyne/v2/theme"
 	"github.com/timzifer/figure"
-	"github.com/timzifer/figure/ir"
-	figuretheme "github.com/timzifer/figure/theme"
+	"github.com/timzifer/fyne_figure/internal/look"
 )
-
-// themeState is what a chart was last built for. Comparing two of them is how
-// a settings change that touched neither the palette nor the typeface is
-// recognised as nothing to do — Fyne fires a settings change for a scale, a
-// primary colour or an animation preference too.
-type themeState struct {
-	background color.RGBA
-	size       float32
-	font       string
-}
 
 // syncTheme follows Fyne's own colours and typeface, and rebuilds the chart
 // when either moved. It runs on every Refresh, which is where Fyne has already
@@ -31,7 +17,7 @@ func (c *Chart) syncTheme() {
 	if now == c.themed {
 		return
 	}
-	fontChanged := c.cfg.font && now.font != c.themed.font
+	fontChanged := c.cfg.font && now.Font != c.themed.Font
 	c.themed = now
 
 	// The typeface is fixed when a rasterizer is made, so a new one means a new
@@ -79,12 +65,7 @@ func (c *Chart) refont() {
 }
 
 // applyTheme puts figure's own light or dark theme on the plot, in the page
-// colour and at the text size Fyne asks for.
-//
-// Which of the two is decided by how dark the application's background is
-// rather than by Fyne's light/dark preference, because a Fyne theme is not
-// obliged to be either: a custom one is whatever colours it names, and its
-// background is the honest answer to "is this a dark chart or a light one".
+// colour and at the text size Fyne asks for — see [look.State.Theme].
 //
 // It is figure.Theme applied to the plot directly rather than at
 // construction: a Plot Option is an ordinary function, and a chart whose
@@ -93,95 +74,22 @@ func (c *Chart) applyTheme() {
 	if !c.cfg.theme {
 		return
 	}
-	st := c.themeStateNow()
-
-	base := figuretheme.Light
-	if dark(st.background) {
-		base = figuretheme.Dark
-	}
-	// The page is Fyne's, so the chart sits in the widget rather than on a
-	// rectangle of its own.
-	opts := []figuretheme.Option{
-		figuretheme.Background(ir.RGBA(st.background.R, st.background.G, st.background.B, st.background.A)),
-	}
-	if st.size > 0 {
-		opts = append(opts, figuretheme.FontSize(float64(st.size)))
-	}
-	figure.Theme(base.With(opts...))(c.plot)
-}
-
-// dark reports whether a background wants a dark chart. The weights are the
-// sRGB luma ones and the threshold is the middle.
-func dark(c color.RGBA) bool {
-	if c.A == 0 {
-		return false
-	}
-	luma := 0.2126*float64(c.R) + 0.7152*float64(c.G) + 0.0722*float64(c.B)
-	return luma < 128
+	figure.Theme(c.themeStateNow().Theme())(c.plot)
 }
 
 // themeStateNow reads what Fyne currently asks for.
-func (c *Chart) themeStateNow() themeState {
-	app := fyne.CurrentApp()
-	if app == nil {
-		return themeState{}
+func (c *Chart) themeStateNow() look.State {
+	if fyne.CurrentApp() == nil {
+		return look.State{}
 	}
-	th := c.Theme()
-	if th == nil {
-		return themeState{}
-	}
-	variant := app.Settings().ThemeVariant()
-
-	st := themeState{
-		background: rgba(th.Color(fynetheme.ColorNameBackground, variant)),
-		size:       th.Size(fynetheme.SizeNameText),
-	}
-	if res := th.Font(fyne.TextStyle{}); res != nil {
-		st.font = res.Name()
-	}
-	return st
+	return look.Read(c.Theme())
 }
 
 // themeFonts reads the application's typeface, for the rasterizer to draw
-// labels with. Bold and italic are optional: a theme with no italic face gets
-// the regular one, which is what the rasterizer does with a nil.
+// labels with.
 func (c *Chart) themeFonts() (regular, bold, italic []byte, ok bool) {
 	if fyne.CurrentApp() == nil {
 		return nil, nil, nil, false
 	}
-	th := c.Theme()
-	if th == nil {
-		return nil, nil, nil, false
-	}
-	regular = fontBytes(th, fyne.TextStyle{})
-	if len(regular) == 0 {
-		return nil, nil, nil, false
-	}
-	return regular, fontBytes(th, fyne.TextStyle{Bold: true}), fontBytes(th, fyne.TextStyle{Italic: true}), true
-}
-
-func fontBytes(th fyne.Theme, style fyne.TextStyle) []byte {
-	res := th.Font(style)
-	if res == nil {
-		return nil
-	}
-	return res.Content()
-}
-
-// rgba flattens a theme colour into the eight-bit non-premultiplied channels
-// figure's palette speaks in.
-func rgba(c color.Color) color.RGBA {
-	if c == nil {
-		return color.RGBA{}
-	}
-	r, g, b, a := c.RGBA()
-	if a == 0 {
-		return color.RGBA{}
-	}
-	return color.RGBA{
-		R: uint8(r * 0xffff / a >> 8),
-		G: uint8(g * 0xffff / a >> 8),
-		B: uint8(b * 0xffff / a >> 8),
-		A: uint8(a >> 8),
-	}
+	return look.Fonts(c.Theme())
 }

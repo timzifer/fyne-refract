@@ -6,8 +6,8 @@ Two modules, one repository.
 
 | Path | Module | Depends on |
 |---|---|---|
-| `.` | `github.com/timzifer/fyne-figure` | Fyne, figure, figure's raster backend |
-| `gpu` | `github.com/timzifer/fyne-figure/gpu` | the above plus figure's GPU tier, and through it wgpu |
+| `.` | `github.com/timzifer/fyne_figure` | Fyne, figure, figure's raster backend |
+| `gpu` | `github.com/timzifer/fyne_figure/gpu` | the above plus figure's GPU tier, and through it wgpu |
 
 The split is not cosmetic. A nested module is excluded from its parent's module
 graph, so importing the widget cannot pull a GPU stack into a build that never
@@ -15,10 +15,16 @@ asked for one. It is the arrangement figure makes for the same tier one level
 up.
 
 Inside the main module the split is figure's own, between `backend/window` and
-`backend/window/show`: `fynefigure` draws and `fynefigure/chart` steers. A
-backend must not know what a scale or a panel is, and everything in `chart` is
-about scales and panels. A change that needs to cross that line is a sign the
+`backend/window/show`: `fynefigure` draws, and `fynefigure/chart` and
+`fynefigure/orbit` steer. A backend must not know what a scale or a panel is,
+and everything in `chart` is about scales and panels — and everything in
+`orbit` about cameras. A change that needs to cross that line is a sign the
 seam is in the wrong place — say so rather than routing around it.
+
+`chart` and `orbit` are two widgets rather than one because figure has two
+plots: a `figure.Plot` is steered by figure's own `Input`, and a `three.Plot`
+has no scales to pan and leaves its loop to the host. What the two share —
+reading Fyne's theme — is in `internal/look`.
 
 ## Everyday commands
 
@@ -32,7 +38,7 @@ go test -race ./...
 
 # the library must not need cgo; only the demo does, because Fyne's desktop
 # driver does
-CGO_ENABLED=0 go build . ./chart
+CGO_ENABLED=0 go build . ./chart ./orbit
 
 # a chart in a window, by hand — the one thing CI cannot check
 go run ./cmd/demo

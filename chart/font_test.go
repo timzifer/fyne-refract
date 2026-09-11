@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/timzifer/figure"
 	"github.com/timzifer/figure/geom"
-	"github.com/timzifer/fyne-figure/chart"
+	"github.com/timzifer/fyne_figure/chart"
 )
 
 // Fyne draws text through a shaper that falls back to another font for a

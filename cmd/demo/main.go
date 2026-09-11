@@ -19,6 +19,10 @@
 // instead of panning. None of it is on by default — a legend that always
 // toggled would be wrong for one that selects rather than filters — so this
 // tab is also the list of the switches.
+//
+// The fourth is a scene in three dimensions, which figure grew in v0.9: one
+// surface seen from two cameras. Drag a view to turn it, turn the wheel over
+// it to bring it closer, double click to put both back where they started.
 package main
 
 import (
@@ -38,9 +42,12 @@ import (
 	ggbackend "github.com/timzifer/figure/backend/gg"
 	"github.com/timzifer/figure/data"
 	"github.com/timzifer/figure/geom"
+	"github.com/timzifer/figure/interact"
 	"github.com/timzifer/figure/palette"
 	"github.com/timzifer/figure/scale"
-	"github.com/timzifer/fyne-figure/chart"
+	"github.com/timzifer/figure/three"
+	"github.com/timzifer/fyne_figure/chart"
+	"github.com/timzifer/fyne_figure/orbit"
 )
 
 func main() {
@@ -55,6 +62,7 @@ func main() {
 		container.NewTabItem("Signal", signalTab()),
 		liveItem,
 		container.NewTabItem("Interact", interactTab()),
+		container.NewTabItem("3D", sceneTab()),
 	)
 	// A chart nobody is looking at should not be drawn. Both tabs share one
 	// goroutine — Fyne's — so a hidden chart repainting twenty times a second
@@ -184,6 +192,67 @@ func interactTab() fyne.CanvasObject {
 	controls := container.NewHBox(widget.NewLabel("Drag:"), mode, show)
 	charts := container.NewGridWithRows(2, top, bottom)
 	return container.NewBorder(nil, container.NewVBox(status, controls), nil, nil, charts)
+}
+
+// sceneTab is one surface seen from two cameras. The scene is built once and
+// its scales trained once; each view is only a camera on it, and a drag turns
+// the one it started in.
+func sceneTab() fyne.CanvasObject {
+	sc := three.NewScene(three.XTitle("x"), three.YTitle("y"), three.ZTitle("response")).
+		Z(scale.Linear(scale.Nice())).
+		Add(three.Surface(saddle(), geom.X("x"), geom.Y("y"), geom.Z("z"),
+			geom.Fill(palette.SkyBlue), geom.Label("response")))
+
+	labels := []string{"three-quarter", "plan"}
+	p := three.New(three.Size(900, 480), three.Title("Response surface"), three.Columns(2)).
+		Scene(sc).
+		Add(
+			three.View{Camera: three.Home(), Label: labels[0]},
+			three.View{Camera: three.LookAt(three.Elevation(1.45)), Label: labels[1]},
+		)
+
+	c := orbit.New(p, orbit.TrackRows(true))
+
+	hint := "Drag a view to turn it, turn the wheel over it to bring it closer, double click to go home."
+	status := widget.NewLabel(hint)
+	c.OnCamera(func(i int, cam three.Camera) {
+		status.SetText(fmt.Sprintf("%s   azimuth %.0f°   elevation %.0f°   zoom %.2f",
+			labels[i], cam.Azimuth()*180/math.Pi, cam.Elevation()*180/math.Pi, cam.Zoom()))
+	})
+	// A projected mark has no x and y to read back, so a hover says which
+	// view and which row — which is the whole answer a pointer has here.
+	c.OnHover(func(h interact.Hit, found bool) {
+		if !found {
+			status.SetText(hint)
+			return
+		}
+		status.SetText(fmt.Sprintf("%s   %s   row %d", labels[h.Panel], h.Series, h.Row))
+	})
+
+	home := widget.NewButton("Home", func() {
+		if err := c.Home(); err != nil {
+			status.SetText("home: " + err.Error())
+		}
+	})
+	return container.NewBorder(nil, container.NewVBox(status, container.NewHBox(home)), nil, nil, c)
+}
+
+// saddle is a response with a ridge one way and a trough the other: the shape
+// whose point is that a heatmap of it looks symmetric and it is not.
+func saddle() figure.Source {
+	const n = 28
+	xs := make([]float64, 0, n*n)
+	ys := make([]float64, 0, n*n)
+	zs := make([]float64, 0, n*n)
+	for j := range n {
+		for i := range n {
+			x := -3 + 6*float64(i)/(n-1)
+			y := -3 + 6*float64(j)/(n-1)
+			xs, ys = append(xs, x), append(ys, y)
+			zs = append(zs, math.Sin(x)*math.Cos(y)*1.4+0.25*x)
+		}
+	}
+	return figure.NewTable().Float64("x", xs).Float64("y", ys).Float64("z", zs)
 }
 
 // plotOf is two named series over one table, which is what gives the chart a

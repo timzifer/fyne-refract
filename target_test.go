@@ -5,14 +5,15 @@ import (
 	"image"
 	"image/png"
 
-	"fyne.io/fyne/v2/canvas"
 	"math"
 	"testing"
+
+	"fyne.io/fyne/v2/canvas"
 
 	"github.com/timzifer/figure"
 	ggbackend "github.com/timzifer/figure/backend/gg"
 	"github.com/timzifer/figure/geom"
-	fynefigure "github.com/timzifer/fyne-figure"
+	fynefigure "github.com/timzifer/fyne_figure"
 )
 
 // The claim this package rests on is that a chart in a Fyne widget is the
