@@ -23,7 +23,7 @@
 //
 // # Pointing at things
 //
-// Beyond the gestures every chart has, four things a reader can do are wired
+// Beyond the gestures every chart has, five things a reader can do are wired
 // here and switched off by default, because figure deliberately wires none of
 // them: a legend that always toggled and two charts that always moved together
 // would each be wrong somewhere.
@@ -34,6 +34,11 @@
 //   - [LegendToggle] makes a click on a legend row hide the layer it stands
 //     for. [Chart.HideLayer] and the calls beside it are the same thing
 //     without the pointer.
+//   - [Select] makes a click on a mark pick the row behind it and a click on
+//     nothing clear what was picked, with a ring over each picked row.
+//     [Chart.OnSelect] and [Chart.SetSelection] link that selection to another
+//     chart — including a projected scene, since both speak
+//     [github.com/timzifer/fyne_figure.Selection] and a key crosses tables.
 //   - [Chart.OnViewChange] and [Chart.SetView] link one chart to another.
 //   - [Overlay] paints over the finished chart — a crosshair, a highlight, a
 //     box of text.

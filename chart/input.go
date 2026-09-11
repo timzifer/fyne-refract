@@ -190,11 +190,15 @@ func (c *Chart) up(pos fyne.Position) {
 	// Before the release, so that nothing the release draws still carries the
 	// band the reader has just let go of.
 	c.endBand()
+	c.selDirty = false
 	release := func() error {
 		if err := c.in.Up(float64(pos.X), float64(pos.Y)); err != nil {
 			return err
 		}
-		if banded {
+		// The click the release just fired may have picked a row out. It could
+		// not draw its own frame — it runs inside this hold — so it said so,
+		// and this is where the rings get onto the screen.
+		if banded || c.selDirty {
 			// A selection draws nothing of its own — it answers a question —
 			// so the band would still be on screen. A zoom to the band has
 			// already drawn and this frame is identical to it, which paints

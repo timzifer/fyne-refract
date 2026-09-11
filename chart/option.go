@@ -36,6 +36,10 @@ type config struct {
 	brushSet     bool
 	legendToggle bool
 	overlay      figure.Overlay
+
+	selects     bool
+	multiSelect bool
+	ring        figure.Highlight
 }
 
 func defaults() config {
@@ -336,6 +340,38 @@ func Brush(br *figure.Brush) Option {
 // rescaled on every click would make the two readings incomparable. See
 // [Chart.HideLayer].
 func LegendToggle(on bool) Option { return func(c *config) { c.legendToggle = on } }
+
+// Select makes a click on a mark pick the row behind it, and a click on nothing
+// clear what was picked. It is off by default.
+//
+// A picked row gets a ring drawn over the chart, and [Chart.OnSelect] reports
+// it in a vocabulary another chart understands — so linking a flat chart to a
+// projected scene is one line each way. See [Chart.OnSelect].
+//
+// It implies row tracking: a selection is a row, and an index that was not
+// tracking rows holds none. That is not a default anybody would want
+// overridden, so it is not offered as one.
+func Select(on bool) Option { return func(c *config) { c.selects = on } }
+
+// MultiSelect makes every click add to the selection or take its row back out,
+// rather than replacing it. It is off by default and does nothing without
+// [Select].
+//
+// It is a mode rather than a modifier key for the reason figure's
+// [figure.Input] gives about drags: a modifier is a fact about a keyboard, and
+// a touch screen has none. A caller wanting shift-to-add reads its own key
+// events and calls [Chart.SetMultiSelect].
+func MultiSelect(on bool) Option { return func(c *config) { c.multiSelect = on } }
+
+// Ring sets what the mark round a picked row looks like. The zero value takes
+// the theme's label colour at six device units, which is a little larger than a
+// default scatter marker.
+//
+// Only the look is taken: where the rings go is the selection's, and a Ring
+// that named positions would have them overwritten on the next frame.
+func Ring(h figure.Highlight) Option {
+	return func(c *config) { c.ring = figure.Highlight{Radius: h.Radius, Color: h.Color, Width: h.Width} }
+}
 
 // Overlay installs something to paint over the chart — a crosshair, a
 // highlight, a box of text — from construction. It is [Chart.Overlay] for a

@@ -22,14 +22,20 @@ import (
 // every time a drag started.
 type overlays struct {
 	user  figure.Overlay
+	marks *marks
 	brush *figure.Brush
 }
 
-// DrawOverlay implements [figure.Overlay]. The band goes last, so a selection
-// being dragged out is drawn over a crosshair rather than under it.
+// DrawOverlay implements [figure.Overlay]. The rings go over the caller's
+// overlay, because a selection is what the reader is being answered about; the
+// band goes last of all, so a selection being dragged out is drawn over both
+// rather than under them.
 func (o *overlays) DrawOverlay(b ir.Backend, f figure.OverlayFrame) {
 	if o.user != nil {
 		o.user.DrawOverlay(b, f)
+	}
+	if o.marks != nil {
+		o.marks.DrawOverlay(b, f)
 	}
 	if o.brush != nil {
 		o.brush.DrawOverlay(b, f)
@@ -87,11 +93,18 @@ func (c *Chart) syncOverlay() {
 	if !c.banding {
 		band = nil
 	}
-	if c.overlay == nil && band == nil {
+	rings := c.mk
+	if len(c.sel) == 0 {
+		rings = nil
+	}
+	if c.overlay == nil && band == nil && rings == nil {
 		c.live.Overlay(nil)
 		return
 	}
-	c.ov.user, c.ov.brush = c.overlay, band
+	if rings != nil {
+		rings.idx, rings.sel, rings.layers = c.live.Index(), c.sel, c.plot.Layers()
+	}
+	c.ov.user, c.ov.marks, c.ov.brush = c.overlay, rings, band
 	c.live.Overlay(c.ov)
 }
 

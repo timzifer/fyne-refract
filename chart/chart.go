@@ -107,6 +107,18 @@ type Chart struct {
 	banding bool
 	onView  func(figure.View)
 
+	// The selection: what the reader has picked, what draws it, and who is
+	// told when it changes. The rings resolve against the frame being drawn
+	// rather than against the last one — see select.go — so they follow a pan
+	// without anybody recomputing them.
+	sel      fynefigure.Selection
+	mk       *marks
+	onSelect func(fynefigure.Selection)
+
+	// selDirty says a click changed the selection inside the surface hold the
+	// release took, so the release owes it a frame. See [Chart.up].
+	selDirty bool
+
 	stream *data.Stream
 	stopFn func()
 
@@ -141,6 +153,7 @@ func New(p *figure.Plot, opts ...Option) *Chart {
 		o(&c.cfg)
 	}
 	c.overlay, c.ov = c.cfg.overlay, &overlays{}
+	c.mk = &marks{ring: c.cfg.ring}
 	c.brush = c.cfg.brush
 	if !c.cfg.brushSet {
 		// The default band: figure's own look, which reads against either
@@ -516,7 +529,7 @@ func (c *Chart) steers() bool { return !c.follows() || c.cfg.pause }
 // rectangle and report nothing under it. Turning it on for the mode that needs
 // it is not a default anybody would want overridden.
 func (c *Chart) tracksRows() bool {
-	return c.cfg.trackRows || c.cfg.drag == figure.DragSelects
+	return c.cfg.trackRows || c.cfg.drag == figure.DragSelects || c.cfg.selects
 }
 
 // drags reports whether a press starts a gesture the chart will act on.
@@ -578,12 +591,16 @@ func (c *Chart) hookEvents() {
 	// the redraw Live.Toggle does needs no hold of its own, and it must not
 	// take the chart's lock, which the same call already has.
 	c.plot.On(figure.Click, func(ev figure.Event) {
-		if !c.cfg.legendToggle || c.live == nil || ev.Hit.Kind != figure.LegendRow {
+		if c.live == nil {
 			return
 		}
-		if err := c.live.Toggle(ev.Hit.Layer); err != nil {
-			c.renderr = err
+		if c.cfg.legendToggle && ev.Hit.Kind == figure.LegendRow {
+			if err := c.live.Toggle(ev.Hit.Layer); err != nil {
+				c.renderr = err
+			}
+			return
 		}
+		c.clicked(ev)
 	})
 	if !c.cfg.tooltip {
 		return
