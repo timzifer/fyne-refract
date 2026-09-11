@@ -79,6 +79,13 @@
 // two numbers figure hands out: how far away the row was drawn, and how near
 // the nearest thing at that point is.
 //
+// It is asked of the ring rather than of a pixel, and it carries over from the
+// last frame unless this one is one-sided, because a point on a rolling surface
+// genuinely goes in and out of cover as the scene turns — and a ring that
+// answered each frame on its own would change several times a second under a
+// drag, which says nothing about the data and a great deal about the
+// arithmetic.
+//
 // The rings are figure's own [three.Overlay], drawn after every view and
 // clipped by nothing. One is installed only while something is picked: a turn
 // with an overlay installed repaints the whole canvas rather than the cells

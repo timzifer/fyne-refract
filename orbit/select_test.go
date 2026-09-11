@@ -326,3 +326,27 @@ func TestRedrawingTheSameSceneGivesTheSameRings(t *testing.T) {
 		}
 	}
 }
+
+// The other side of the flicker test: damping must not turn into deafness. One
+// ring, turned right round, has to be dashed for part of it and solid for the
+// rest — a mark that never changed its mind would pass the flicker test by
+// saying nothing.
+func TestARingStillChangesOverAWholeTurn(t *testing.T) {
+	c, _ := shown(t, fyne.NewSize(500, 300), plot(), orbit.Select(true))
+	rows := c.Live().Index().RowsOf(0, 0, nil)
+	if len(rows) == 0 {
+		t.Fatal("the scene reported no rows")
+	}
+	c.SetSelection(fynefigure.Selection{{View: 0, Layer: 0, Row: rows[len(rows)/2].Row}})
+
+	seen := map[int]bool{}
+	for range 40 {
+		drag(c, fyne.NewPos(250, 150), fyne.NewDelta(20, 0))
+		if total, hidden := orbit.SelectionRings(c); total > 0 {
+			seen[hidden] = true
+		}
+	}
+	if len(seen) < 2 {
+		t.Errorf("over a whole turn the ring was always %v; it must be hidden for part of it and not for the rest", seen)
+	}
+}

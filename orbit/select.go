@@ -234,6 +234,12 @@ type marks struct {
 	// gathers into, kept for the same reason.
 	ring three.Highlight
 	near []interact.RowRef
+
+	// was and now are the previous frame's answer for each ring and this
+	// frame's, which is what the hysteresis in hiddenAt carries over. They are
+	// swapped rather than rebuilt so that a scene under a drag allocates
+	// nothing per frame.
+	was, now map[ringKey]bool
 }
 
 // DrawOverlay implements [three.Overlay].
@@ -242,6 +248,11 @@ func (m *marks) DrawOverlay(b ir.Backend, f three.OverlayFrame) {
 		return
 	}
 	m.ring.Marks = m.ring.Marks[:0]
+	if m.now == nil {
+		m.was, m.now = map[ringKey]bool{}, map[ringKey]bool{}
+	}
+	m.was, m.now = m.now, m.was
+	clear(m.now)
 	for _, ref := range m.sel {
 		if ref.Layer < 0 || ref.Row < 0 {
 			// A row that came from a flat chart names a layer of *that* chart.
@@ -259,9 +270,10 @@ func (m *marks) DrawOverlay(b ir.Backend, f three.OverlayFrame) {
 				continue
 			}
 			mine, deep := m.depthOf(view, ref)
+			key := ringKey{view: view, layer: ref.Layer, row: ref.Row}
 			m.ring.Marks = append(m.ring.Marks, three.Mark{
 				At:     at,
-				Hidden: m.hiddenAt(at, mine, deep),
+				Hidden: m.hiddenAt(key, at, mine, deep),
 			})
 		}
 	}
@@ -280,42 +292,53 @@ func (m *marks) DrawOverlay(b ir.Backend, f three.OverlayFrame) {
 // projected scene is painted back to front, so the topmost mark at a point is
 // the nearest one. Nearer than the row means in front of it.
 //
-// # Why it asks more than once
+// # Why it asks more than once, and remembers
 //
 // Asking at the ring's centre alone is correct and useless. A surface's cells
 // overlap on screen wherever it is steep, so at a grazing angle the cell next
-// to the marked one covers its centroid and is a hair nearer — which is true,
-// and is not what a reader means by "behind". Worse, which of the two wins
-// changes with a fraction of a degree of turn, so the ring flickers between
-// solid and dashed while the scene is dragged.
+// to the marked one covers its centroid and is a hair nearer — true, and not
+// what a reader means by "behind". So the question is asked of the ring: its
+// centre and eight points around it.
 //
-// So the question is asked of the ring rather than of a pixel: the centre and
-// eight points around it, and the answer is what most of them say. A ring
-// genuinely behind a ridge is covered everywhere; one merely tangent to its own
-// neighbour is covered on one side, and stays solid. That is stable under a
-// turn because a majority does not change on a hair.
-func (m *marks) hiddenAt(at ir.Point, mine float64, deep bool) bool {
+// That is still not enough, because a point on a rolling surface genuinely goes
+// in and out of cover as the scene turns, and a ring that answered each frame on
+// its own would change several times a second under a drag. A reader cannot use
+// that: a mark that keeps changing its mind says nothing about the data and a
+// great deal about the arithmetic.
+//
+// So the answer carries over from the last frame unless this one is one-sided.
+// Nearly every sample covered turns it on, nearly none turns it off, and the
+// wide middle keeps what it had. It is the hysteresis a thermostat has and for
+// the same reason: the input is noisy about a boundary the output must not be.
+func (m *marks) hiddenAt(key ringKey, at ir.Point, mine float64, deep bool) bool {
 	if !deep {
 		return false
 	}
-	covered, asked := 0, 0
+	covered, asked := 0, len(ringSamples)
 	for _, off := range ringSamples {
-		p := ir.Point{X: at.X + off.X, Y: at.Y + off.Y}
-		h, ok := m.idx.At(p, 0)
-		if !ok || !h.Deep {
-			// Nothing there at all is the background showing through, which
-			// is not something in front. It still counts as asked: a ring half
-			// off the edge of the surface is not hidden.
-			asked++
-			continue
-		}
-		asked++
-		if h.Depth < mine-occlusionEpsilon {
+		h, ok := m.idx.At(ir.Point{X: at.X + off.X, Y: at.Y + off.Y}, 0)
+		if ok && h.Deep && h.Depth < mine-occlusionEpsilon {
 			covered++
 		}
 	}
-	return asked > 0 && covered*2 > asked
+
+	was, seen := m.was[key]
+	switch {
+	case covered >= asked-1:
+		was = true
+	case covered <= 1:
+		was = false
+	case !seen:
+		// Nothing to carry over, so the middle falls to the plain majority.
+		was = covered*2 > asked
+	}
+	m.now[key] = was
+	return was
 }
+
+// ringKey names one ring across frames: the same row of the same layer seen in
+// the same view. It is what the hysteresis remembers by.
+type ringKey struct{ view, layer, row int }
 
 // ringSamples are where the occlusion test looks, relative to a ring's centre:
 // the middle and eight points around it, at a little over half the radius so
