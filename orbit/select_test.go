@@ -270,3 +270,59 @@ func TestTurningTheSceneChangesWhichRingsAreHidden(t *testing.T) {
 		t.Errorf("turning the scene right round left the hidden count at %v throughout", seen)
 	}
 }
+
+// A ring must not flicker between solid and dashed while the scene is dragged.
+//
+// It is the reason the occlusion test asks about the ring rather than about one
+// pixel: a surface's cells overlap on screen wherever it is steep, so the cell
+// next to the marked one covers its centroid at a grazing angle and is a hair
+// nearer — true, not what a reader means by "behind", and decided by a fraction
+// of a degree of turn.
+func TestARingDoesNotFlickerWhileTheSceneTurns(t *testing.T) {
+	c, _ := shown(t, fyne.NewSize(500, 300), plot(), orbit.Select(true))
+	rows := c.Live().Index().RowsOf(0, 0, nil)
+	if len(rows) == 0 {
+		t.Fatal("the scene reported no rows")
+	}
+	c.SetSelection(fynefigure.Selection{{View: 0, Layer: 0, Row: rows[len(rows)/2].Row}})
+
+	last, changes := -1, 0
+	for range 120 {
+		drag(c, fyne.NewPos(250, 150), fyne.NewDelta(1, 0))
+		_, hidden := orbit.SelectionRings(c)
+		if last >= 0 && hidden != last {
+			changes++
+		}
+		last = hidden
+	}
+	// A turn of a hundred and twenty pixels genuinely takes a point behind the
+	// surface and out again a few times. Many more than that is flicker.
+	if changes > 6 {
+		t.Errorf("one ring changed between solid and dashed %d times over 120 one-pixel drags", changes)
+	}
+}
+
+// The same camera drawn twice gives the same answer, which is the floor under
+// the test above: an answer that moved between two identical frames would be
+// flicker nothing could damp.
+func TestRedrawingTheSameSceneGivesTheSameRings(t *testing.T) {
+	c, _ := shown(t, fyne.NewSize(500, 300), plot(), orbit.Select(true))
+	rows := c.Live().Index().RowsOf(0, 0, nil)
+	sel := make(fynefigure.Selection, 0, len(rows))
+	for _, r := range rows {
+		sel = append(sel, fynefigure.Ref{View: 0, Layer: 0, Row: r.Row})
+	}
+	c.SetSelection(sel)
+
+	wantTotal, wantHidden := orbit.SelectionRings(c)
+	if wantTotal == 0 {
+		t.Fatal("the selection drew no rings")
+	}
+	for i := range 8 {
+		c.Redraw()
+		if total, hidden := orbit.SelectionRings(c); total != wantTotal || hidden != wantHidden {
+			t.Fatalf("redraw %d drew %d rings of which %d hidden, want %d and %d",
+				i, total, hidden, wantTotal, wantHidden)
+		}
+	}
+}

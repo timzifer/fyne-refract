@@ -275,25 +275,65 @@ func (m *marks) DrawOverlay(b ir.Backend, f three.OverlayFrame) {
 // hiddenAt reports whether something in the scene is in front of where a row
 // landed in one view.
 //
-// It is one subtraction over two numbers figure hands out. The row says how far
-// away it was drawn, and a hit at its position says how near the nearest thing
-// there is — a projected scene is painted back to front, so the topmost mark at
-// a point is the nearest one. If that is nearer than the row, the row is behind
-// it.
+// It is a comparison of two numbers figure hands out. The row says how far away
+// it was drawn, and a hit says how near the nearest thing at a point is — a
+// projected scene is painted back to front, so the topmost mark at a point is
+// the nearest one. Nearer than the row means in front of it.
 //
-// The tolerance is there because a face and the row it carries are the same
-// primitive at the same depth, and a float32 depth carries the same value two
-// ways round a subtraction.
+// # Why it asks more than once
+//
+// Asking at the ring's centre alone is correct and useless. A surface's cells
+// overlap on screen wherever it is steep, so at a grazing angle the cell next
+// to the marked one covers its centroid and is a hair nearer — which is true,
+// and is not what a reader means by "behind". Worse, which of the two wins
+// changes with a fraction of a degree of turn, so the ring flickers between
+// solid and dashed while the scene is dragged.
+//
+// So the question is asked of the ring rather than of a pixel: the centre and
+// eight points around it, and the answer is what most of them say. A ring
+// genuinely behind a ridge is covered everywhere; one merely tangent to its own
+// neighbour is covered on one side, and stays solid. That is stable under a
+// turn because a majority does not change on a hair.
 func (m *marks) hiddenAt(at ir.Point, mine float64, deep bool) bool {
 	if !deep {
 		return false
 	}
-	h, ok := m.idx.At(at, 0)
-	if !ok || !h.Deep {
-		return false
+	covered, asked := 0, 0
+	for _, off := range ringSamples {
+		p := ir.Point{X: at.X + off.X, Y: at.Y + off.Y}
+		h, ok := m.idx.At(p, 0)
+		if !ok || !h.Deep {
+			// Nothing there at all is the background showing through, which
+			// is not something in front. It still counts as asked: a ring half
+			// off the edge of the surface is not hidden.
+			asked++
+			continue
+		}
+		asked++
+		if h.Depth < mine-occlusionEpsilon {
+			covered++
+		}
 	}
-	return h.Depth < mine-occlusionEpsilon
+	return asked > 0 && covered*2 > asked
 }
+
+// ringSamples are where the occlusion test looks, relative to a ring's centre:
+// the middle and eight points around it, at a little over half the radius so
+// that they sit inside the ring the reader is looking at rather than on it.
+var ringSamples = func() []ir.Point {
+	const r = 0.6 * ringRadius
+	const d = r * 0.7071 // r/√2, the diagonals
+	return []ir.Point{
+		{X: 0, Y: 0},
+		{X: r, Y: 0}, {X: -r, Y: 0}, {X: 0, Y: r}, {X: 0, Y: -r},
+		{X: d, Y: d}, {X: d, Y: -d}, {X: -d, Y: d}, {X: -d, Y: -d},
+	}
+}()
+
+// ringRadius is the radius three.Highlight draws at when nobody says otherwise.
+// The occlusion test looks inside that circle, because what the reader sees
+// inside the ring is what the ring is claiming.
+const ringRadius = 6
 
 // depthOf is how far the scene drew one row in one view, and whether it said.
 func (m *marks) depthOf(view int, ref fynefigure.Ref) (float64, bool) {
