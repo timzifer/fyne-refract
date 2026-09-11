@@ -1,6 +1,10 @@
 // Command demo shows figure charts in a Fyne window.
 //
-//	go run ./cmd/demo
+//	cd cmd/demo && go run .
+//
+// It is a module of its own so that it can import the GPU tier, which is
+// nested inside the widget's module and so outside its graph. See go.mod
+// beside this file.
 //
 // Two tabs. The first is a still signal: hover to see what is under the
 // pointer, drag to pan, turn the wheel to zoom about it, double click to go

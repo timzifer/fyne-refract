@@ -32,6 +32,7 @@ jobs:
           cache-dependency-path: |
             go.sum
             gpu/go.sum
+            cmd/demo/go.sum
 
       - name: install the Fyne build dependencies
         run: |
@@ -47,21 +48,25 @@ jobs:
         run: |
           go vet ./...
           (cd gpu && go vet ./... && go vet -tags tierparity ./...)
+          (cd cmd/demo && go vet ./...)
 
       - name: build
         run: |
           go build ./...
           (cd gpu && go build ./...)
+          (cd cmd/demo && go build ./...)
 
       - name: test
         run: |
           go test ./...
           (cd gpu && go test ./...)
+          (cd cmd/demo && go test ./...)
 
       - name: test with the race detector
         run: |
           go test -race ./...
           (cd gpu && go test -race ./...)
+          (cd cmd/demo && go test -race ./...)
 
   nocgo:
     name: the library builds without cgo
@@ -92,11 +97,15 @@ jobs:
           # one holds the module to the version it claims to need, so that the
           # go directive is a promise rather than a guess.
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache-dependency-path: |
+            go.sum
+            cmd/demo/go.sum
       - run: |
           sudo apt-get update
           sudo apt-get install -y $FYNE_DEPS
-      - run: go build ./...
+      - run: |
+          go build ./...
+          (cd cmd/demo && go build ./...)
 
   vuln:
     name: govulncheck
@@ -109,6 +118,7 @@ jobs:
           cache-dependency-path: |
             go.sum
             gpu/go.sum
+            cmd/demo/go.sum
       - run: |
           sudo apt-get update
           sudo apt-get install -y $FYNE_DEPS
@@ -121,6 +131,7 @@ jobs:
         run: |
           go run golang.org/x/vuln/cmd/govulncheck@latest ./...
           (cd gpu && go run golang.org/x/vuln/cmd/govulncheck@latest ./...)
+          (cd cmd/demo && go run golang.org/x/vuln/cmd/govulncheck@latest ./...)
 
   tidy:
     name: go.mod is tidy
@@ -133,9 +144,11 @@ jobs:
           cache-dependency-path: |
             go.sum
             gpu/go.sum
+            cmd/demo/go.sum
 
       - name: tidy
         run: |
           go mod tidy
           (cd gpu && go mod tidy)
-          git diff --exit-code -- go.mod go.sum gpu/go.mod gpu/go.sum
+          (cd cmd/demo && go mod tidy)
+          git diff --exit-code -- go.mod go.sum gpu/go.mod gpu/go.sum cmd/demo/go.mod cmd/demo/go.sum

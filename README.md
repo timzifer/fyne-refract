@@ -24,8 +24,12 @@ it later, and `false` takes the pointer back.
 
 ```sh
 go get github.com/timzifer/fyne_figure
-go run github.com/timzifer/fyne_figure/cmd/demo@latest
+git clone https://github.com/timzifer/fyne-figure && cd fyne-figure/cmd/demo && go run .
 ```
+
+The demo is a module of its own — it opts into the GPU tier, which is nested
+and so outside the widget's module graph — so it is run from its directory
+rather than fetched with `go run ...@latest`.
 
 ## What is in here
 
@@ -435,7 +439,8 @@ comparable pixel for pixel with an exported PNG.
 ```sh
 go build ./... && go vet ./... && go test ./...
 gofmt -l .          # must print nothing
-go run ./cmd/demo   # needs a display
+(cd cmd/demo && go build ./... && go vet ./... && go test ./...)
+(cd cmd/demo && go run .)   # its own module; needs a display
 ```
 
 The tests need no display: Fyne's software painter draws the widget, and what

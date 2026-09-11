@@ -40,8 +40,10 @@ go test -race ./...
 # driver does
 CGO_ENABLED=0 go build . ./chart ./orbit
 
-# a chart in a window, by hand — the one thing CI cannot check
-go run ./cmd/demo
+# a chart in a window, by hand — the one thing CI cannot check. The demo is a
+# module of its own, because it opts into the GPU tier and that tier is nested
+# inside this one: see cmd/demo/go.mod.
+(cd cmd/demo && go run .)
 ```
 
 Developing against a figure checkout next door wants a workspace. It is not
