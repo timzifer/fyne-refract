@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"github.com/timzifer/figure/three"
-	"github.com/timzifer/fyne_figure/orbit"
+	"github.com/timzifer/fyne-figure/orbit"
 )
 
 // A coarse chart rasterizes a fraction of the pixels and a sharp one all of

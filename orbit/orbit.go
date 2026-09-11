@@ -9,8 +9,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/timzifer/figure/interact"
 	"github.com/timzifer/figure/three"
-	fynefigure "github.com/timzifer/fyne_figure"
-	"github.com/timzifer/fyne_figure/internal/look"
+	fynefigure "github.com/timzifer/fyne-figure"
+	"github.com/timzifer/fyne-figure/internal/look"
 )
 
 // Which views a gesture turns: one view by its index, or one of these.

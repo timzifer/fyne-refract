@@ -38,7 +38,7 @@
 //     nothing clear what was picked, with a ring over each picked row.
 //     [Chart.OnSelect] and [Chart.SetSelection] link that selection to another
 //     chart — including a projected scene, since both speak
-//     [github.com/timzifer/fyne_figure.Selection] and a key crosses tables.
+//     [github.com/timzifer/fyne-figure.Selection] and a key crosses tables.
 //   - [Chart.OnViewChange] and [Chart.SetView] link one chart to another.
 //   - [Overlay] paints over the finished chart — a crosshair, a highlight, a
 //     box of text.

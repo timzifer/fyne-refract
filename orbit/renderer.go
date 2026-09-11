@@ -3,7 +3,7 @@ package orbit
 import (
 	"fyne.io/fyne/v2"
 	"github.com/timzifer/figure/three"
-	"github.com/timzifer/fyne_figure/internal/look"
+	"github.com/timzifer/fyne-figure/internal/look"
 )
 
 // renderer is the chart's Fyne renderer: the raster the scene is drawn into.

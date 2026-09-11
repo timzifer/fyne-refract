@@ -10,8 +10,8 @@ import (
 	"github.com/timzifer/figure/data"
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/scale"
-	fynefigure "github.com/timzifer/fyne_figure"
-	"github.com/timzifer/fyne_figure/chart"
+	fynefigure "github.com/timzifer/fyne-figure"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // keyedPlot is a scatter whose rows have names, so that a selection made here

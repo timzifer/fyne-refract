@@ -9,8 +9,8 @@ import (
 	"github.com/timzifer/figure"
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/three"
-	fynefigure "github.com/timzifer/fyne_figure"
-	"github.com/timzifer/fyne_figure/orbit"
+	fynefigure "github.com/timzifer/fyne-figure"
+	"github.com/timzifer/fyne-figure/orbit"
 )
 
 // A flat chart beside the scene makes refs that name *its* layer and row. Only

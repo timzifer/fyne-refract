@@ -64,9 +64,9 @@ import (
 	"github.com/timzifer/figure/palette"
 	"github.com/timzifer/figure/scale"
 	"github.com/timzifer/figure/three"
-	fynefigure "github.com/timzifer/fyne_figure"
-	"github.com/timzifer/fyne_figure/chart"
-	"github.com/timzifer/fyne_figure/orbit"
+	fynefigure "github.com/timzifer/fyne-figure"
+	"github.com/timzifer/fyne-figure/chart"
+	"github.com/timzifer/fyne-figure/orbit"
 )
 
 func main() {

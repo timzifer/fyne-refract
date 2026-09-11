@@ -1,4 +1,4 @@
-module github.com/timzifer/fyne_figure
+module github.com/timzifer/fyne-figure
 
 go 1.25.0
 

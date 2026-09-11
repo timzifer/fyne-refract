@@ -10,7 +10,7 @@ import (
 	"github.com/timzifer/figure"
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/scale"
-	"github.com/timzifer/fyne_figure/chart"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // A chart has furniture a pointer can find: a legend row, a

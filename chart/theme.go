@@ -3,7 +3,7 @@ package chart
 import (
 	"fyne.io/fyne/v2"
 	"github.com/timzifer/figure"
-	"github.com/timzifer/fyne_figure/internal/look"
+	"github.com/timzifer/fyne-figure/internal/look"
 )
 
 // syncTheme follows Fyne's own colours and typeface, and rebuilds the chart

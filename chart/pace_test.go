@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"github.com/timzifer/figure"
-	"github.com/timzifer/fyne_figure/chart"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // Fyne's desktop driver drains the whole event queue in one pass, so a drag

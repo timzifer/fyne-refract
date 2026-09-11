@@ -25,5 +25,5 @@ package main
 import (
 	// The blank import is the whole opt-in: the tier registers gg's
 	// accelerator from its init, and every rasterizer made afterwards uses it.
-	_ "github.com/timzifer/fyne_figure/gpu"
+	_ "github.com/timzifer/fyne-figure/gpu"
 )

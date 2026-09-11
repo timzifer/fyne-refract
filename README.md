@@ -1,7 +1,7 @@
 # fyne-figure
 
-[![CI](https://github.com/timzifer/fyne_figure/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne_figure/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne_figure.svg)](https://pkg.go.dev/github.com/timzifer/fyne_figure)
+[![CI](https://github.com/timzifer/fyne-figure/actions/workflows/ci.yml/badge.svg)](https://github.com/timzifer/fyne-figure/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/timzifer/fyne-figure.svg)](https://pkg.go.dev/github.com/timzifer/fyne-figure)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [figure](https://github.com/timzifer/figure) charts in a [Fyne](https://fyne.io) app.
@@ -23,7 +23,7 @@ with it instead of taking the wheel. `c.SetInteractive(true)` lets a reader at
 it later, and `false` takes the pointer back.
 
 ```sh
-go get github.com/timzifer/fyne_figure
+go get github.com/timzifer/fyne-figure
 git clone https://github.com/timzifer/fyne-figure
 cd fyne-figure/cmd/demo && go run .
 ```
@@ -399,7 +399,7 @@ There is a GPU tier, in `fyne-figure/gpu`, and it is worth having:
 One blank import turns it on:
 
 ```go
-import _ "github.com/timzifer/fyne_figure/gpu"
+import _ "github.com/timzifer/fyne-figure/gpu"
 ```
 
 A machine with no usable device falls back to the CPU rasterizer, and

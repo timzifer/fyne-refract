@@ -6,8 +6,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/timzifer/figure/ir"
-	fynefigure "github.com/timzifer/fyne_figure"
-	"github.com/timzifer/fyne_figure/orbit"
+	fynefigure "github.com/timzifer/fyne-figure"
+	"github.com/timzifer/fyne-figure/orbit"
 )
 
 // click presses and releases without moving, which is what tells a click from

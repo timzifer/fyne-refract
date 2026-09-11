@@ -11,7 +11,7 @@ import (
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/interact"
 	"github.com/timzifer/figure/three"
-	"github.com/timzifer/fyne_figure/orbit"
+	"github.com/timzifer/fyne-figure/orbit"
 )
 
 // What is asserted here is where the cameras are, not what the scene looks

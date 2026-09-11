@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
-	"github.com/timzifer/fyne_figure/chart"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // Fyne sends an event to whatever implements the interface for it, wanted or

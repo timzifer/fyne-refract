@@ -18,7 +18,7 @@ import (
 	"github.com/timzifer/figure"
 	ggbackend "github.com/timzifer/figure/backend/gg"
 	"github.com/timzifer/figure/geom"
-	gputier "github.com/timzifer/fyne_figure/gpu"
+	gputier "github.com/timzifer/fyne-figure/gpu"
 )
 
 // A chart drawn on the GPU should be the chart drawn on the CPU. figure's own

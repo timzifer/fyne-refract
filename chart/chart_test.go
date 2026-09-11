@@ -14,7 +14,7 @@ import (
 	"github.com/timzifer/figure/data"
 	"github.com/timzifer/figure/geom"
 	"github.com/timzifer/figure/scale"
-	"github.com/timzifer/fyne_figure/chart"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 // What is asserted here is what figure reports, not what the chart looks

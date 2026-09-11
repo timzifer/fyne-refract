@@ -1,10 +1,10 @@
-module github.com/timzifer/fyne_figure/gpu
+module github.com/timzifer/fyne-figure/gpu
 
 go 1.25.0
 
 // The GPU tier is a module of its own so that importing the widget cannot pull
 // a GPU stack in by accident: a nested module is excluded from its parent's
-// module graph, so github.com/timzifer/fyne_figure keeps its dependencies to
+// module graph, so github.com/timzifer/fyne-figure keeps its dependencies to
 // Fyne, figure and figure's raster backend. It is the arrangement figure
 // makes for the same tier one level up — see its docs/adr/0022.
 //

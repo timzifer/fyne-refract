@@ -2,17 +2,24 @@
 
 ## Layout
 
-Two modules, one repository.
+Three modules, one repository.
 
 | Path | Module | Depends on |
 |---|---|---|
-| `.` | `github.com/timzifer/fyne_figure` | Fyne, figure, figure's raster backend |
-| `gpu` | `github.com/timzifer/fyne_figure/gpu` | the above plus figure's GPU tier, and through it wgpu |
+| `.` | `github.com/timzifer/fyne-figure` | Fyne, figure, figure's raster backend |
+| `gpu` | `github.com/timzifer/fyne-figure/gpu` | the above plus figure's GPU tier, and through it wgpu |
+| `cmd/demo` | `github.com/timzifer/fyne-figure/cmd/demo` | both of the above |
 
 The split is not cosmetic. A nested module is excluded from its parent's module
 graph, so importing the widget cannot pull a GPU stack into a build that never
 asked for one. It is the arrangement figure makes for the same tier one level
 up.
+
+The demo is a third module for the other side of that: it is the one thing here
+that wants both the widget and the tier, and the only way to import a nested
+module is from outside the one it is nested in. Its `replace` directives point
+at the two directories above it, and nothing imports the demo, so they cost no
+one anything.
 
 Inside the main module the split is figure's own, between `backend/window` and
 `backend/window/show`: `fynefigure` draws, and `fynefigure/chart` and

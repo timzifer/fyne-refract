@@ -7,7 +7,7 @@ import (
 	"github.com/timzifer/figure/ir"
 	"github.com/timzifer/figure/three"
 
-	fynefigure "github.com/timzifer/fyne_figure"
+	fynefigure "github.com/timzifer/fyne-figure"
 )
 
 // A selection in a projected scene is the one interaction the arrangement was

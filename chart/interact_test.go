@@ -13,7 +13,7 @@ import (
 	"github.com/timzifer/figure/ir"
 	"github.com/timzifer/figure/palette"
 	"github.com/timzifer/figure/scale"
-	"github.com/timzifer/fyne_figure/chart"
+	"github.com/timzifer/fyne-figure/chart"
 )
 
 func TestClickingALegendRowHidesTheLayer(t *testing.T) {
