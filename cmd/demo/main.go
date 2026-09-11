@@ -27,6 +27,15 @@
 // put them all back. Click a point and it is ringed in all four at once, which
 // is what several views are for: identifying a measurement from one angle and
 // finding it again from the others.
+//
+// The fifth is the same four cameras as four widgets, with the glue that made
+// them one figure written out in the program: a pick ringed in all four, a turn
+// that turns all four, and the others drawn at half resolution while one is
+// turned so that the one under the pointer keeps up. See cameras.go.
+//
+// The sixth is one field read two ways off one colour scale: a heatmap with its
+// isolines to take numbers off, and the surface with the same isolines on its
+// floor. A cell clicked in either is ringed in both. See contour.go.
 package main
 
 import (
@@ -68,6 +77,8 @@ func main() {
 		liveItem,
 		container.NewTabItem("Interact", interactTab()),
 		container.NewTabItem("3D", sceneTab()),
+		container.NewTabItem("3D × 4", camerasTab()),
+		container.NewTabItem("Contour", contourTab()),
 	)
 	// A chart nobody is looking at should not be drawn. Both tabs share one
 	// goroutine — Fyne's — so a hidden chart repainting twenty times a second
