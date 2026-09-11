@@ -52,7 +52,7 @@ func TestAPacedDragEndsWhereAnUnpacedOneDoes(t *testing.T) {
 	for i := 1; i <= 100; i++ {
 		drag(paced, 400-float32(i), 150)
 	}
-	paced.DragEnd()
+	chart.PointerOf(paced).DragEnd()
 
 	// The same gesture with the pacing off, which is one frame per event.
 	every, _ := shown(t, fyne.NewSize(500, 300), chart.FrameInterval(-1))
@@ -60,7 +60,7 @@ func TestAPacedDragEndsWhereAnUnpacedOneDoes(t *testing.T) {
 	for i := 1; i <= 100; i++ {
 		drag(every, 400-float32(i), 150)
 	}
-	every.DragEnd()
+	chart.PointerOf(every).DragEnd()
 
 	got, want := domainOf(t, paced), domainOf(t, every)
 	if !withinAPixel(got, want, 500) {
@@ -74,7 +74,7 @@ func TestPacedZoomLandsWhereEveryNotchWould(t *testing.T) {
 	for range 20 {
 		test.Scroll(win.Canvas(), fyne.NewPos(250, 150), 0, 1)
 	}
-	paced.MouseOut() // ends the gesture, drawing what is held back
+	chart.PointerOf(paced).MouseOut() // ends the gesture, drawing what is held back
 
 	every, everyWin := shown(t, fyne.NewSize(500, 300), chart.FrameInterval(-1))
 	for range 20 {
@@ -104,7 +104,7 @@ func TestHoveringIsNotPaced(t *testing.T) {
 // benchChart is a laid-out chart without a testing.T to hand.
 func benchChart(b *testing.B, opts ...chart.Option) *chart.Chart {
 	b.Helper()
-	c := chart.New(benchPlot(), append([]chart.Option{chart.ThemeFont(false)}, opts...)...)
+	c := chart.New(benchPlot(), append([]chart.Option{chart.ThemeFont(false), chart.Interactive(true)}, opts...)...)
 	win := test.NewWindow(c)
 	b.Cleanup(win.Close)
 	win.Resize(fyne.NewSize(900, 500))
@@ -113,14 +113,14 @@ func benchChart(b *testing.B, opts ...chart.Option) *chart.Chart {
 }
 
 func press(c *chart.Chart, x, y float32) {
-	c.MouseDown(&desktop.MouseEvent{
+	chart.PointerOf(c).MouseDown(&desktop.MouseEvent{
 		PointEvent: fyne.PointEvent{Position: fyne.NewPos(x, y)},
 		Button:     desktop.MouseButtonPrimary,
 	})
 }
 
 func drag(c *chart.Chart, x, y float32) {
-	c.Dragged(&fyne.DragEvent{
+	chart.PointerOf(c).Dragged(&fyne.DragEvent{
 		PointEvent: fyne.PointEvent{Position: fyne.NewPos(x, y)},
 		Dragged:    fyne.NewDelta(-1, 0),
 	})
@@ -166,7 +166,7 @@ func BenchmarkDragFrame(b *testing.B) {
 				drag(c, 860-float32(i%200), 250)
 			}
 			b.StopTimer()
-			c.DragEnd()
+			chart.PointerOf(c).DragEnd()
 		})
 	}
 }
@@ -190,7 +190,7 @@ func BenchmarkDragBurst(b *testing.B) {
 				for i := 1; i <= 100; i++ {
 					drag(c, 400-float32(i), 150)
 				}
-				c.DragEnd()
+				chart.PointerOf(c).DragEnd()
 			}
 		})
 	}

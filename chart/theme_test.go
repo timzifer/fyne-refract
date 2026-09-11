@@ -14,7 +14,7 @@ func TestAChartFollowsTheApplicationsColours(t *testing.T) {
 	app := test.NewTempApp(t)
 	app.Settings().SetTheme(paper{color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}})
 
-	c, _ := laidOut(t, chart.New(plot(), chart.ThemeFont(false)))
+	c, _ := laidOut(t, chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false)))
 	light := topLeft(t, c)
 
 	app.Settings().SetTheme(paper{color.NRGBA{R: 0x10, G: 0x12, B: 0x16, A: 0xff}})
@@ -36,7 +36,7 @@ func TestAChartCanIgnoreTheTheme(t *testing.T) {
 	app := test.NewTempApp(t)
 	app.Settings().SetTheme(paper{color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}})
 
-	c, _ := laidOut(t, chart.New(plot(), chart.ThemeFont(false), chart.FollowTheme(false)))
+	c, _ := laidOut(t, chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false), chart.FollowTheme(false)))
 	before := topLeft(t, c)
 
 	app.Settings().SetTheme(paper{color.NRGBA{R: 0x10, G: 0x12, B: 0x16, A: 0xff}})
@@ -94,7 +94,7 @@ func TestAChangeOfTypefaceKeepsTheObjectTheWidgetIsShowing(t *testing.T) {
 	app := test.NewTempApp(t)
 	app.Settings().SetTheme(paper{color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}})
 
-	c, _ := laidOut(t, chart.New(plot()))
+	c, _ := laidOut(t, chart.New(plot(), chart.Interactive(true)))
 	shown := test.WidgetRenderer(c).Objects()[0]
 
 	app.Settings().SetTheme(monospaced{paper{color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}}})

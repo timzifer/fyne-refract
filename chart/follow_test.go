@@ -94,7 +94,7 @@ func TestWithFollowPauseAGrabStopsItFollowing(t *testing.T) {
 		t.Errorf("a frame after a pan moved the axis from %v to %v", panned[0], held[0])
 	}
 
-	c.DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
+	chart.PointerOf(c).DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
 	appendRows(t, st, 500, 700)
 	c.Refresh()
 	if resumed := domainOf(t, c); resumed[0] <= panned[0] {
@@ -114,15 +114,15 @@ func TestAChartWithoutAStreamIsStillPanned(t *testing.T) {
 }
 
 func dragAcross(c *chart.Chart) {
-	c.MouseDown(&desktop.MouseEvent{
+	chart.PointerOf(c).MouseDown(&desktop.MouseEvent{
 		PointEvent: fyne.PointEvent{Position: fyne.NewPos(250, 150)},
 		Button:     desktop.MouseButtonPrimary,
 	})
-	c.Dragged(&fyne.DragEvent{
+	chart.PointerOf(c).Dragged(&fyne.DragEvent{
 		PointEvent: fyne.PointEvent{Position: fyne.NewPos(310, 150)},
 		Dragged:    fyne.NewDelta(60, 0),
 	})
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 }
 
 // streaming is a chart over a sliding window, laid out and drawn once.
@@ -147,7 +147,7 @@ func streamingChart(t *testing.T, opts ...chart.Option) (*chart.Chart, fyne.Wind
 	p.Y(scale.Linear(scale.Domain(0, 2)))
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y")))
 
-	c := chart.New(p, opts...)
+	c := chart.New(p, append([]chart.Option{chart.Interactive(true)}, opts...)...)
 	c.Stream(st)
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))

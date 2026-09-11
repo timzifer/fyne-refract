@@ -11,6 +11,8 @@ import (
 type Option func(*config)
 
 type config struct {
+	interactive bool
+
 	min       fyne.Size
 	perPixel  float64
 	wheel     float64
@@ -43,6 +45,17 @@ const DefaultPerPixel = 0.008
 // by some amount dollies a projected one by the same.
 const DefaultWheelScale = 4
 
+// Interactive lets a reader turn the scene: a drag, the wheel, a double click
+// and a hover. It is off by default.
+//
+// Off, the chart is a picture. It takes no pointer events at all, so it scrolls
+// with a scroll container around it and leaves every gesture to whatever is
+// behind it. The cameras can still be moved from code — [Chart.SetCamera] and
+// [Chart.Home] work on a chart nobody can touch.
+//
+// [Chart.SetInteractive] changes it on a chart already on screen.
+func Interactive(on bool) Option { return func(c *config) { c.interactive = on } }
+
 // MinSize sets the smallest size the widget asks its layout for. The default
 // is 240x160.
 func MinSize(w, h float32) Option {
@@ -50,8 +63,9 @@ func MinSize(w, h float32) Option {
 }
 
 // PerPixel sets how far a pixel of drag turns the camera, in radians. The
-// default is [DefaultPerPixel]; a negative value turns the scene the other way
-// round, which some readers expect of a globe.
+// default is [DefaultPerPixel], and a drag takes hold of the scene: the side
+// facing the reader follows the pointer. A negative value moves the camera
+// with the pointer instead, so the scene turns against it.
 func PerPixel(rad float64) Option {
 	return func(c *config) {
 		if rad != 0 {

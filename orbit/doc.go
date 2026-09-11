@@ -4,11 +4,22 @@
 //	sc := three.NewScene(three.XTitle("x"), three.YTitle("y"), three.ZTitle("z"))
 //	sc.Add(three.Surface(src, geom.X("x"), geom.Y("y"), geom.Z("z")))
 //
-//	w.SetContent(orbit.New(three.New(three.Title("Response")).Scene(sc)))
+//	p := three.New(three.Title("Response")).Scene(sc)
+//	w.SetContent(orbit.New(p, orbit.Interactive(true)))
 //
-// A drag orbits the view it started in, the wheel dollies it, and a double
-// click puts every view back at the camera its author chose. The widget
-// follows its own size and the application's colours, as [chart.Chart] does.
+// The widget follows its own size and the application's colours, as
+// [chart.Chart] does. Made [Interactive], a drag takes hold of the view it
+// started in and turns it — the side facing the reader follows the pointer —
+// the wheel dollies it, and a double click puts every view back at the camera
+// its author chose.
+//
+// # Still until asked
+//
+// A scene is a picture until it is told otherwise, for the reason package
+// chart gives: a widget that took the pointer would take the wheel and the
+// drag from the scroll container around it. [Interactive] lets a reader at it
+// from construction, and [Chart.SetInteractive] does the same, or takes it
+// back, for a chart already on screen.
 //
 // # Why this is not package chart
 //

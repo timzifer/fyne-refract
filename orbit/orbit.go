@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/timzifer/figure/interact"
 	"github.com/timzifer/figure/three"
@@ -25,6 +24,9 @@ const (
 // It is drawn by [fynefigure.Target] — the same rasterizer, the same pixels,
 // as a flat chart and as the PNG the same plot would write — and turned by
 // [three.Live], which it tells where the cameras are and asks for frames.
+//
+// A reader turns it once it is [Interactive], and not before. Until then it
+// takes no pointer events at all.
 //
 // The chart is opened at the first layout, because a plot needs a size and a
 // widget has none until it is laid out. Everything before that — the scene,
@@ -80,6 +82,10 @@ type Chart struct {
 	// themed is what the chart was last built for; see look.State.
 	themed look.State
 
+	// ptr is the layer that takes the pointer. It is always in the widget's
+	// tree and hidden unless the chart is [Interactive]; see input.go.
+	ptr *pointer
+
 	onCamera func(view int, cam three.Camera)
 	onHover  func(h interact.Hit, found bool)
 	hovering bool
@@ -87,17 +93,10 @@ type Chart struct {
 	renderr error
 }
 
-// The interfaces a chart answers. A drag arrives through Dragged, so the chart
-// is not Mouseable: a press that does not move turns nothing and has nothing
-// to say.
-var (
-	_ fyne.Widget         = (*Chart)(nil)
-	_ fyne.Draggable      = (*Chart)(nil)
-	_ fyne.Scrollable     = (*Chart)(nil)
-	_ fyne.DoubleTappable = (*Chart)(nil)
-	_ desktop.Hoverable   = (*Chart)(nil)
-	_ desktop.Cursorable  = (*Chart)(nil)
-)
+// A chart is a widget and nothing else. The pointer interfaces are its
+// pointer layer's, which is only there to be found once the chart is
+// [Interactive] — see input.go.
+var _ fyne.Widget = (*Chart)(nil)
 
 // New returns a widget showing p.
 //
@@ -108,6 +107,7 @@ func New(p *three.Plot, opts ...Option) *Chart {
 	for _, o := range opts {
 		o(&c.cfg)
 	}
+	c.ptr = newPointer(c, c.cfg.interactive)
 	c.ExtendBaseWidget(c)
 	return c
 }
@@ -266,7 +266,7 @@ func (c *Chart) CreateRenderer() fyne.WidgetRenderer {
 	defer c.lock.Unlock()
 	c.ExtendBaseWidget(c)
 	c.ensureTarget()
-	return &renderer{c: c, objects: []fyne.CanvasObject{c.target.Object()}}
+	return &renderer{c: c, objects: []fyne.CanvasObject{c.target.Object(), c.ptr}}
 }
 
 // resize lays the chart out at a new size, which is where a Live is born.

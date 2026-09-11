@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/timzifer/figure"
 	"github.com/timzifer/figure/data"
@@ -22,6 +21,10 @@ import (
 // how the same plot behaves in a browser or a native window: hover to see what
 // is under the pointer, drag to pan, turn the wheel to zoom about it, double
 // click to go back to the whole picture.
+//
+// It behaves that way once it is [Interactive], and not before. Until then it
+// takes no pointer events at all and is a picture that follows its size, its
+// theme and its data.
 //
 // The chart is opened at the first layout, because a plot needs a size and a
 // widget has none until it is laid out. Everything before that — adding
@@ -88,6 +91,10 @@ type Chart struct {
 
 	tip *tooltip
 
+	// ptr is the layer that takes the pointer. It is always in the widget's
+	// tree and hidden unless the chart is [Interactive]; see input.go.
+	ptr *pointer
+
 	// The overlay layer. overlay is what a caller installed and brush is the
 	// rubber band of a [DragMode] drag; ov composes the two and is what figure
 	// is actually given. banding says a band is being dragged out right now,
@@ -119,19 +126,10 @@ type Chart struct {
 	renderr error
 }
 
-// The interfaces a chart answers. Tapping is deliberately not among them: a
-// click already arrives through MouseUp, where figure's own click slop
-// decides whether it was one, and fyne.Tappable would deliver a second copy of
-// it a double-click delay later.
-var (
-	_ fyne.Widget         = (*Chart)(nil)
-	_ fyne.Draggable      = (*Chart)(nil)
-	_ fyne.Scrollable     = (*Chart)(nil)
-	_ fyne.DoubleTappable = (*Chart)(nil)
-	_ desktop.Hoverable   = (*Chart)(nil)
-	_ desktop.Mouseable   = (*Chart)(nil)
-	_ desktop.Cursorable  = (*Chart)(nil)
-)
+// A chart is a widget and nothing else. The pointer interfaces are its
+// pointer layer's, which is only there to be found once the chart is
+// [Interactive] — see input.go for why the widget must not carry them itself.
+var _ fyne.Widget = (*Chart)(nil)
 
 // New returns a widget showing p.
 //
@@ -149,6 +147,7 @@ func New(p *figure.Plot, opts ...Option) *Chart {
 		// theme because it is drawn in the theme's own axis colour.
 		c.brush = &figure.Brush{}
 	}
+	c.ptr = newPointer(c, c.cfg.interactive)
 	c.ExtendBaseWidget(c)
 	return c
 }
@@ -286,7 +285,7 @@ func (c *Chart) CreateRenderer() fyne.WidgetRenderer {
 	c.ExtendBaseWidget(c)
 	c.ensureTarget()
 	c.tip = newTooltip(c)
-	objects := append([]fyne.CanvasObject{c.target.Object()}, c.tip.objects()...)
+	objects := append([]fyne.CanvasObject{c.target.Object(), c.ptr}, c.tip.objects()...)
 	return &renderer{c: c, objects: objects}
 }
 

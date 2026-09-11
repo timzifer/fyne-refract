@@ -17,7 +17,7 @@ import (
 )
 
 func TestClickingALegendRowHidesTheLayer(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.LegendToggle(true))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false), chart.LegendToggle(true))
 	shownAt(t, c)
 
 	pos, hit := legendAt(t, c)
@@ -41,7 +41,7 @@ func TestClickingALegendRowHidesTheLayer(t *testing.T) {
 // The wiring is a switch and not a default: figure deliberately does not
 // toggle a legend by itself, and a chart that was not asked to must not either.
 func TestALegendDoesNotToggleUnlessAsked(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, c)
 
 	pos, hit := legendAt(t, c)
@@ -52,7 +52,7 @@ func TestALegendDoesNotToggleUnlessAsked(t *testing.T) {
 }
 
 func TestHidingALayerIsDrawnAndReported(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, c)
 
 	before := c.Target().Frames()
@@ -76,7 +76,7 @@ func TestHidingALayerIsDrawnAndReported(t *testing.T) {
 // A drag in DragSelects reports the rows under the rectangle and does not move
 // the chart, which is the whole difference from a pan.
 func TestADragCanSelectInsteadOfPanning(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
 	shownAt(t, c)
 
 	var events []figure.Event
@@ -104,7 +104,7 @@ func TestADragCanSelectInsteadOfPanning(t *testing.T) {
 // The band is the surface's to draw: figure paints nothing while one is being
 // dragged out. So the frames have to come from here.
 func TestARubberBandIsDrawnWhileItIsDraggedOut(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
 	shownAt(t, c)
 
 	press(c, 120, 80)
@@ -113,7 +113,7 @@ func TestARubberBandIsDrawnWhileItIsDraggedOut(t *testing.T) {
 	if c.Target().Frames() == before {
 		t.Error("dragging a selection out painted no frame, so nothing showed the band")
 	}
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 }
 
 // A chart that follows a stream refuses a pan — it would fight the follow — and
@@ -130,7 +130,7 @@ func TestAFollowingChartCanStillBeSelectedOver(t *testing.T) {
 	p.X(scale.Linear())
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y"), geom.Label("signal")))
 
-	c := chart.New(p, chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
+	c := chart.New(p, chart.Interactive(true), chart.ThemeFont(false), chart.DragMode(figure.DragSelects))
 	c.Stream(st)
 	shownAt(t, c)
 
@@ -143,7 +143,7 @@ func TestAFollowingChartCanStillBeSelectedOver(t *testing.T) {
 }
 
 func TestAnOverlayIsInstalledAndOnlyWhenThereIsOne(t *testing.T) {
-	plain := chart.New(legendPlot(), chart.ThemeFont(false))
+	plain := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, plain)
 	// Nothing installed is not a detail: figure redraws on every hover while
 	// an overlay is installed, so a chart carrying an empty one would pay a
@@ -153,7 +153,7 @@ func TestAnOverlayIsInstalledAndOnlyWhenThereIsOne(t *testing.T) {
 	}
 
 	cross := &figure.Crosshair{}
-	c := chart.New(legendPlot(), chart.ThemeFont(false), chart.Overlay(cross))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false), chart.Overlay(cross))
 	shownAt(t, c)
 	if c.CurrentOverlay() != figure.Overlay(cross) {
 		t.Error("the overlay the chart was built with is not the one it reports")
@@ -172,7 +172,7 @@ func TestAnOverlayIsInstalledAndOnlyWhenThereIsOne(t *testing.T) {
 }
 
 func TestAnOverlayCanBeInstalledAfterTheChartIsShown(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, c)
 
 	cross := &figure.Crosshair{At: ir.Point{X: 200, Y: 150}, Show: true}
@@ -192,8 +192,8 @@ func TestAnOverlayCanBeInstalledAfterTheChartIsShown(t *testing.T) {
 }
 
 func TestTheViewOfOneChartCanBePutIntoAnother(t *testing.T) {
-	left := chart.New(legendPlot(), chart.ThemeFont(false))
-	right := chart.New(legendPlot(), chart.ThemeFont(false))
+	left := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
+	right := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, left)
 	shownAt(t, right)
 
@@ -226,7 +226,7 @@ func TestTheViewOfOneChartCanBePutIntoAnother(t *testing.T) {
 // A view that was put there is not a view the reader moved to. If SetView
 // reported one, two linked charts would tell each other for ever.
 func TestSetViewReportsNothing(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, c)
 
 	v := c.View()
@@ -243,13 +243,13 @@ func TestSetViewReportsNothing(t *testing.T) {
 // The double click that puts the view back fires no event of figure's own, so
 // the chart has to say so itself or a linked chart would stay zoomed.
 func TestGoingBackToTheWholePictureIsReported(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, c)
 
 	scroll(c, fyne.NewPos(250, 150), 3)
 	var told int
 	c.OnViewChange(func(figure.View) { told++ })
-	c.DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
+	chart.PointerOf(c).DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
 	if told == 0 {
 		t.Error("a double click put the view back and told nobody")
 	}
@@ -277,7 +277,7 @@ func TestATransitionIsDrivenToItsEnd(t *testing.T) {
 	p.Add(geom.Bar(tw.Source(), geom.X("slot"), geom.Y("share"),
 		geom.KeyBy("lang"), geom.Color(palette.Blue), geom.BarWidth(0.6)))
 
-	c := chart.New(p, chart.ThemeFont(false))
+	c := chart.New(p, chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, c)
 
 	tr, err := c.Transition(tw)
@@ -309,7 +309,7 @@ func TestATransitionIsDrivenToItsEnd(t *testing.T) {
 }
 
 func TestPlayingATransitionOnAChartWithoutOneIsHarmless(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	// Before any layout there is no Live, so there is nothing to build one on.
 	tr, err := c.Transition()
 	if tr != nil || err != nil {
@@ -322,8 +322,8 @@ func TestPlayingATransitionOnAChartWithoutOneIsHarmless(t *testing.T) {
 // click slop turns into a click rather than a drag.
 func click(c *chart.Chart, pos fyne.Position) {
 	ev := &desktop.MouseEvent{PointEvent: fyne.PointEvent{Position: pos}, Button: desktop.MouseButtonPrimary}
-	c.MouseDown(ev)
-	c.MouseUp(ev)
+	chart.PointerOf(c).MouseDown(ev)
+	chart.PointerOf(c).MouseUp(ev)
 }
 
 // band presses at one corner, moves to the other and releases — the three
@@ -331,16 +331,16 @@ func click(c *chart.Chart, pos fyne.Position) {
 func band(c *chart.Chart, from, to fyne.Position) {
 	press(c, from.X, from.Y)
 	drag(c, to.X, to.Y)
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 }
 
 func scroll(c *chart.Chart, at fyne.Position, notches float32) {
-	c.Scrolled(&fyne.ScrollEvent{
+	chart.PointerOf(c).Scrolled(&fyne.ScrollEvent{
 		PointEvent: fyne.PointEvent{Position: at},
 		Scrolled:   fyne.NewDelta(0, notches),
 	})
 	// A wheel is paced, so the frame it asked for may still be waiting.
-	c.MouseOut()
+	chart.PointerOf(c).MouseOut()
 }
 
 // domains is where every axis of every panel currently reaches. A

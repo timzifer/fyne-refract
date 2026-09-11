@@ -101,7 +101,7 @@ func signalTab() fyne.CanvasObject {
 	// is dragged and sharpen it afterwards, which is worth about three times
 	// the frame rate on the CPU rasterizer. It is left off so that the demo
 	// shows what the widget does by default.
-	c := chart.New(p, chart.TrackRows(true))
+	c := chart.New(p, chart.Interactive(true), chart.TrackRows(true))
 
 	status := widget.NewLabel("Hover the chart.")
 	p.On(figure.Hover, func(ev figure.Event) {
@@ -141,10 +141,12 @@ func interactTab() fyne.CanvasObject {
 	// Two charts of the same rows, so that a view handed from one to the other
 	// means the same thing in both.
 	top := chart.New(plotOf(src, "Signal — drag to select"),
+		chart.Interactive(true),
 		chart.LegendToggle(true),
 		chart.DragMode(figure.DragSelects),
 	)
 	bottom := chart.New(plotOf(src, "The same rows, linked"),
+		chart.Interactive(true),
 		chart.LegendToggle(true),
 	)
 
@@ -211,7 +213,7 @@ func sceneTab() fyne.CanvasObject {
 			three.View{Camera: three.LookAt(three.Elevation(1.45)), Label: labels[1]},
 		)
 
-	c := orbit.New(p, orbit.TrackRows(true))
+	c := orbit.New(p, orbit.Interactive(true), orbit.TrackRows(true))
 
 	hint := "Drag a view to turn it, turn the wheel over it to bring it closer, double click to go home."
 	status := widget.NewLabel(hint)
@@ -305,7 +307,7 @@ func liveTab() (fyne.CanvasObject, func() (stop func())) {
 	// tip have been dropped and there is nothing back there to look at. Add
 	// chart.FollowPause(true) to let a drag take the chart off the data
 	// instead, until a double click hands it back.
-	c := chart.New(p)
+	c := chart.New(p, chart.Interactive(true))
 	c.Stream(st)
 
 	// The producer appends and never reads. The chart freezes a snapshot

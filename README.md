@@ -10,12 +10,17 @@
 p := figure.New(figure.Responsive(true), figure.Title("Signal"))
 p.Add(geom.Line(src, geom.X("t"), geom.Y("signal")))
 
-w.SetContent(chart.New(p))
+w.SetContent(chart.New(p, chart.Interactive(true)))
 ```
 
 That is the whole of it. The widget hovers, drags to pan, zooms about the
 pointer, resets the view on a double click, follows its own size and the
 application's colours, and shows a tooltip for the mark under the pointer.
+
+Leave out `chart.Interactive(true)` and it is a picture: it takes no pointer
+events at all, so a chart inside a scroll container, a list or a form scrolls
+with it instead of taking the wheel. `c.SetInteractive(true)` lets a reader at
+it later, and `false` takes the pointer back.
 
 ```sh
 go get github.com/timzifer/fyne_figure
@@ -65,6 +70,7 @@ the part that changed — see below.
 
 ```go
 c := chart.New(p,
+    chart.Interactive(true),               // take the pointer; off, it is a picture
     chart.MinSize(320, 200),
     chart.Detail(0.5),                     // soften while dragging; 1 is the default
     chart.FrameInterval(0),                // 0 is adaptive, <0 draws every event
@@ -275,16 +281,20 @@ sc := three.NewScene(three.XTitle("x"), three.YTitle("y"), three.ZTitle("gain"))
 sc.Add(three.Surface(src, geom.X("x"), geom.Y("y"), geom.Z("gain")))
 
 p := three.New(three.Title("Response")).Scene(sc)
-w.SetContent(orbit.New(p))
+w.SetContent(orbit.New(p, orbit.Interactive(true)))
 ```
 
-A drag orbits the scene, the wheel brings it closer, a double click puts it
-back at the camera its author chose. It follows its size and the application's
-colours the way the flat widget does, through the same rasterizer.
+A drag takes hold of the scene and turns it — the side facing the reader
+follows the pointer, as in three.js, Blender and matplotlib — the wheel brings
+it closer, a double click puts it back at the camera its author chose. It
+follows its size and the application's colours the way the flat widget does,
+through the same rasterizer. Like the flat widget it is a picture until made
+interactive, and `SetInteractive` switches it either way later.
 
 ```go
 c := orbit.New(p,
-    orbit.PerPixel(0.008),     // radians of turn per pixel of drag
+    orbit.Interactive(true),   // take the pointer; off, it is a picture
+    orbit.PerPixel(0.008),     // radians of turn per pixel of drag; <0 turns against it
     orbit.WheelScale(4),       // dolly per unit of Fyne's scroll
     orbit.Together(false),     // a drag turns the view it started in
     orbit.TrackRows(true),     // Hit.Row on every hover

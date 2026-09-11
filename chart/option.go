@@ -13,6 +13,8 @@ import (
 type Option func(*config)
 
 type config struct {
+	interactive bool
+
 	detail    float32
 	interval  time.Duration
 	pause     bool
@@ -54,6 +56,19 @@ func defaults() config {
 // handful of units where a browser reports it as a line of text, so a chart
 // that zoomed by the raw number would barely move.
 const DefaultWheelScale = 4
+
+// Interactive lets a reader at the chart: hover and its tooltip, a drag, the
+// wheel, a click on a legend row, a double click. It is off by default.
+//
+// Off, the chart is a picture. It takes no pointer events at all, so it scrolls
+// with a scroll container around it and leaves every gesture to whatever is
+// behind it — which is what a chart placed among other widgets wants until the
+// application says otherwise. The chart can still be moved from code:
+// [Chart.SetView], [Chart.Autoscale], [Chart.HideLayer] and a stream all work
+// on a chart nobody can touch.
+//
+// [Chart.SetInteractive] changes it on a chart already on screen.
+func Interactive(on bool) Option { return func(c *config) { c.interactive = on } }
 
 // MinSize sets the smallest size the widget asks its layout for. The default
 // is 240x160: a chart with axes and a legend has nothing useful to show below

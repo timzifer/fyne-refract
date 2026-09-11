@@ -3,13 +3,23 @@
 //	p := figure.New(figure.Responsive(true), figure.Title("Signal"))
 //	p.Add(geom.Line(src, geom.X("t"), geom.Y("y")))
 //
-//	w.SetContent(chart.New(p))
+//	w.SetContent(chart.New(p, chart.Interactive(true)))
 //
-// The widget hovers, clicks, zooms about the pointer, pans on a drag, resets
-// the view on a double click and follows its own size — all of which is
-// [figure.Input] driving [figure.Live], the same state machine the browser
-// and the native window use. What this package adds is the wiring, and a
-// tooltip, a theme that follows Fyne's, and a way to keep a stream moving.
+// The widget follows its own size and the application's theme. Made
+// [Interactive], it also hovers, clicks, zooms about the pointer, pans on a
+// drag and resets the view on a double click — all of which is [figure.Input]
+// driving [figure.Live], the same state machine the browser and the native
+// window use. What this package adds is the wiring, and a tooltip, a theme
+// that follows Fyne's, and a way to keep a stream moving.
+//
+// # Still until asked
+//
+// A chart is a picture until it is told otherwise. It takes no pointer events
+// at all — not a hover, not a drag, not the wheel — so a chart placed in a
+// scroll container, a list or a form scrolls with it and leaves every gesture
+// to what is around it. [Interactive] lets a reader at it from construction,
+// and [Chart.SetInteractive] does the same, or takes it back, for a chart
+// already on screen.
 //
 // # Pointing at things
 //

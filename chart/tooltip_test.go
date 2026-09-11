@@ -14,7 +14,7 @@ import (
 )
 
 func TestATooltipSaysWhatIsUnderThePointer(t *testing.T) {
-	c := chart.New(plot(), chart.ThemeFont(false),
+	c := chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false),
 		chart.TooltipFormat(func(h figure.Hit) string { return fmt.Sprintf("at %.2f", h.X) }))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
@@ -41,14 +41,14 @@ func TestATooltipSaysWhatIsUnderThePointer(t *testing.T) {
 		t.Errorf("drawing the tooltip: %v", err)
 	}
 
-	c.MouseOut()
+	chart.PointerOf(c).MouseOut()
 	if label.Visible() {
 		t.Error("the tooltip is still showing after the pointer left the chart")
 	}
 }
 
 func TestATooltipCanBeTurnedOff(t *testing.T) {
-	c := chart.New(plot(), chart.ThemeFont(false), chart.Tooltip(false))
+	c := chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false), chart.Tooltip(false))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))
@@ -86,7 +86,7 @@ func TestATooltipDrawsEveryLineOfALabel(t *testing.T) {
 
 func TestATooltipTakesItsStyleFromTheOptions(t *testing.T) {
 	want := chart.TooltipStyle{Padding: 20, FontSize: 30}
-	c := chart.New(plot(), chart.ThemeFont(false), chart.TooltipLook(want))
+	c := chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false), chart.TooltipLook(want))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))
@@ -104,7 +104,7 @@ func TestATooltipTakesItsStyleFromTheOptions(t *testing.T) {
 // and what it leaves out still comes from the theme.
 func TestATooltipContentCarriesItsOwnStyle(t *testing.T) {
 	red := color.NRGBA{R: 255, A: 255}
-	c := chart.New(plot(), chart.ThemeFont(false),
+	c := chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false),
 		chart.TooltipLook(chart.TooltipStyle{Padding: 3}),
 		chart.TooltipContentFunc(func(h figure.Hit) chart.TooltipContent {
 			return chart.TooltipContent{
@@ -139,7 +139,7 @@ func (u unitTip) Tooltip(h figure.Hit) chart.TooltipContent {
 }
 
 func TestATooltipperReplacesTheFormat(t *testing.T) {
-	c := chart.New(plot(), chart.ThemeFont(false), chart.TooltipWith(unitTip{unit: "bar"}))
+	c := chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false), chart.TooltipWith(unitTip{unit: "bar"}))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))
@@ -180,7 +180,7 @@ func tooltipImage(t *testing.T, c *chart.Chart) *canvas.Image {
 // it was drawn into.
 func shownTooltip(t *testing.T, label string) *canvas.Image {
 	t.Helper()
-	c := chart.New(plot(), chart.ThemeFont(false),
+	c := chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false),
 		chart.TooltipFormat(func(figure.Hit) string { return label }))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))

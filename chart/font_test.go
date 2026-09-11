@@ -46,7 +46,7 @@ func titled(t *testing.T, title string) image.Image {
 	p := figure.New(figure.Size(400, 250), figure.Title(title))
 	p.Add(geom.Line(source(), geom.X("t"), geom.Y("y")))
 
-	c := chart.New(p)
+	c := chart.New(p, chart.Interactive(true))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))

@@ -73,7 +73,7 @@ func TestADoubleClickPutsTheViewBack(t *testing.T) {
 		t.Fatal("the wheel changed nothing, so there is no zoom to undo")
 	}
 
-	c.DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
+	chart.PointerOf(c).DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
 	if got := domainOf(t, c); got != before {
 		t.Errorf("after a double click the domain is %v, want the original %v", got, before)
 	}
@@ -90,15 +90,15 @@ func TestADragPansAndDoesNotClick(t *testing.T) {
 	// moves the pointer, so the press, the move and the release are sent the
 	// way a desktop driver sends them.
 	before := domainOf(t, c)
-	c.MouseDown(&desktop.MouseEvent{
+	chart.PointerOf(c).MouseDown(&desktop.MouseEvent{
 		PointEvent: fyne.PointEvent{Position: fyne.NewPos(250, 150)},
 		Button:     desktop.MouseButtonPrimary,
 	})
-	c.Dragged(&fyne.DragEvent{
+	chart.PointerOf(c).Dragged(&fyne.DragEvent{
 		PointEvent: fyne.PointEvent{Position: fyne.NewPos(310, 150)},
 		Dragged:    fyne.NewDelta(60, 0),
 	})
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 	_ = win
 
 	if pans == 0 {
@@ -152,7 +152,7 @@ func TestAStreamIsFrozenBeforeEachFrame(t *testing.T) {
 
 	p := figure.New(figure.Size(400, 250))
 	p.Add(geom.Line(st.Source(), geom.X("t"), geom.Y("y")))
-	c := chart.New(p, chart.ThemeFont(false))
+	c := chart.New(p, chart.Interactive(true), chart.ThemeFont(false))
 	c.Stream(st)
 
 	win := test.NewTempWindow(t, c)
@@ -185,7 +185,7 @@ func TestAnimateStopsWhenItIsTold(t *testing.T) {
 // shown builds a chart in a test window and lays it out.
 func shown(t *testing.T, size fyne.Size, opts ...chart.Option) (*chart.Chart, fyne.Window) {
 	t.Helper()
-	c := chart.New(plot(), append([]chart.Option{chart.ThemeFont(false)}, opts...)...)
+	c := chart.New(plot(), append([]chart.Option{chart.ThemeFont(false), chart.Interactive(true)}, opts...)...)
 	win := test.NewTempWindow(t, c)
 	win.Resize(size)
 	c.Resize(size)
@@ -256,7 +256,7 @@ func TestTheChartRasterizesAtTheRatioThePainterAsksFor(t *testing.T) {
 
 func TestAChartThatWasNeverLaidOutDoesNothing(t *testing.T) {
 	test.NewTempApp(t)
-	c := chart.New(plot(), chart.ThemeFont(false))
+	c := chart.New(plot(), chart.Interactive(true), chart.ThemeFont(false))
 
 	if c.Live() != nil {
 		t.Error("a chart that was never laid out has a live chart")
@@ -267,10 +267,10 @@ func TestAChartThatWasNeverLaidOutDoesNothing(t *testing.T) {
 	if err := c.Autoscale(); err != nil {
 		t.Errorf("autoscaling: %v", err)
 	}
-	c.MouseOut()
-	c.DoubleTapped(&fyne.PointEvent{})
-	c.Scrolled(&fyne.ScrollEvent{Scrolled: fyne.NewDelta(0, 4)})
-	c.DragEnd()
+	chart.PointerOf(c).MouseOut()
+	chart.PointerOf(c).DoubleTapped(&fyne.PointEvent{})
+	chart.PointerOf(c).Scrolled(&fyne.ScrollEvent{Scrolled: fyne.NewDelta(0, 4)})
+	chart.PointerOf(c).DragEnd()
 
 	if err := c.Close(); err != nil {
 		t.Errorf("closing: %v", err)
@@ -321,7 +321,7 @@ func TestAChartThatCouldNotOpenTriesAgain(t *testing.T) {
 
 	// A plot with no layers and no scales cannot be drawn, and says so.
 	p := figure.New(figure.Size(400, 250))
-	c := chart.New(p, chart.ThemeFont(false))
+	c := chart.New(p, chart.Interactive(true), chart.ThemeFont(false))
 	win := test.NewTempWindow(t, c)
 	win.Resize(fyne.NewSize(500, 300))
 	c.Resize(fyne.NewSize(500, 300))

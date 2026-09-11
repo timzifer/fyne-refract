@@ -38,21 +38,25 @@ func TestADragOrbitsTheScene(t *testing.T) {
 
 	drag(c, fyne.NewPos(250, 150), fyne.NewDelta(60, 0))
 
-	want := three.Orbit(before, 60*orbit.DefaultPerPixel, 0)
+	// A drag to the right carries the camera left about the scene, so that
+	// the side facing the reader follows the pointer.
+	want := three.Orbit(before, -60*orbit.DefaultPerPixel, 0)
 	if got := c.Camera(0); got != want {
 		t.Errorf("after a drag of 60 pixels the azimuth is %.3f, want %.3f",
 			got.Azimuth(), want.Azimuth())
 	}
 }
 
-func TestDraggingDownLowersTheCamera(t *testing.T) {
+// A drag down tips the top of the scene toward the reader, which is the camera
+// rising over it.
+func TestDraggingDownRaisesTheCamera(t *testing.T) {
 	c, _ := shown(t, fyne.NewSize(500, 300), plot())
 	before := c.Camera(0)
 
 	drag(c, fyne.NewPos(250, 150), fyne.NewDelta(0, 40))
 
-	if got := c.Camera(0).Elevation(); got >= before.Elevation() {
-		t.Errorf("dragging down moved the elevation from %.3f to %.3f, want it lower",
+	if got := c.Camera(0).Elevation(); got <= before.Elevation() {
+		t.Errorf("dragging down moved the elevation from %.3f to %.3f, want it higher",
 			before.Elevation(), got)
 	}
 }
@@ -65,11 +69,11 @@ func TestADragInStepsLandsWhereOneDragWould(t *testing.T) {
 	for range 4 {
 		step := fyne.NewDelta(15, 0)
 		from = from.Add(step)
-		c.Dragged(&fyne.DragEvent{PointEvent: fyne.PointEvent{Position: from}, Dragged: step})
+		orbit.PointerOf(c).Dragged(&fyne.DragEvent{PointEvent: fyne.PointEvent{Position: from}, Dragged: step})
 	}
-	c.DragEnd()
+	orbit.PointerOf(c).DragEnd()
 
-	want := three.Orbit(before, 60*orbit.DefaultPerPixel, 0)
+	want := three.Orbit(before, -60*orbit.DefaultPerPixel, 0)
 	if got := c.Camera(0).Azimuth(); math.Abs(got-want.Azimuth()) > 1e-9 {
 		t.Errorf("four drags of 15 pixels left the azimuth at %.6f, want one of 60's %.6f",
 			got, want.Azimuth())
@@ -97,7 +101,7 @@ func TestADoubleClickGoesHome(t *testing.T) {
 		t.Fatal("the gestures moved nothing, so there is nothing to go home from")
 	}
 
-	c.DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
+	orbit.PointerOf(c).DoubleTapped(&fyne.PointEvent{Position: fyne.NewPos(250, 150)})
 	if got := c.Camera(0); got != home {
 		t.Errorf("after a double click the camera is az %.3f el %.3f, want the author's az %.3f el %.3f",
 			got.Azimuth(), got.Elevation(), home.Azimuth(), home.Elevation())
@@ -140,7 +144,7 @@ func TestTogetherTurnsEveryViewByTheSameAmount(t *testing.T) {
 
 	drag(c, fyne.NewPos(450, 170), fyne.NewDelta(50, 0))
 
-	by := 50 * orbit.DefaultPerPixel
+	by := -50 * orbit.DefaultPerPixel
 	if got, want := c.Camera(0), three.Orbit(left, by, 0); got != want {
 		t.Error("turning together did not turn the left-hand view by the drag")
 	}
@@ -191,7 +195,7 @@ func TestHoveringFindsTheSurface(t *testing.T) {
 	// author's angle, wherever the cube's margins happen to fall.
 	for x := float32(150); x < 350 && !found; x += 8 {
 		for y := float32(100); y < 220 && !found; y += 8 {
-			c.MouseMoved(&desktop.MouseEvent{PointEvent: fyne.PointEvent{Position: fyne.NewPos(x, y)}})
+			orbit.PointerOf(c).MouseMoved(&desktop.MouseEvent{PointEvent: fyne.PointEvent{Position: fyne.NewPos(x, y)}})
 		}
 	}
 	if !found {
@@ -221,7 +225,7 @@ func shown(t *testing.T, size fyne.Size, p *three.Plot, opts ...orbit.Option) (*
 	t.Helper()
 	// Every event drawn, so that a test does not depend on how fast the
 	// machine running it rasterizes.
-	c := orbit.New(p, append([]orbit.Option{orbit.FrameInterval(-1)}, opts...)...)
+	c := orbit.New(p, append([]orbit.Option{orbit.FrameInterval(-1), orbit.Interactive(true)}, opts...)...)
 	win := test.NewTempWindow(t, c)
 	win.Resize(size)
 	c.Resize(size)
@@ -234,8 +238,8 @@ func shown(t *testing.T, size fyne.Size, p *three.Plot, opts ...orbit.Option) (*
 // drag sends a drag the way Fyne's desktop driver does: a position already
 // past the press, and how far it came.
 func drag(c *orbit.Chart, from fyne.Position, by fyne.Delta) {
-	c.Dragged(&fyne.DragEvent{PointEvent: fyne.PointEvent{Position: from.Add(by)}, Dragged: by})
-	c.DragEnd()
+	orbit.PointerOf(c).Dragged(&fyne.DragEvent{PointEvent: fyne.PointEvent{Position: from.Add(by)}, Dragged: by})
+	orbit.PointerOf(c).DragEnd()
 }
 
 func plot() *three.Plot {

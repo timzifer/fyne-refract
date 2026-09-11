@@ -30,7 +30,7 @@ func TestADraggedChartIsRasterizedCoarserAndSharpensAfterwards(t *testing.T) {
 		t.Errorf("a dragged chart rasterizes %v, want half of 500x300", coarse)
 	}
 
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 	if after := buffer(t, c); after != full {
 		t.Errorf("after the drag the chart rasterizes %v, want %v", after, full)
 	}
@@ -48,7 +48,7 @@ func TestAChartIsDrawnAtFullResolutionUnlessAsked(t *testing.T) {
 	if coarse := buffer(t, c); coarse != full {
 		t.Errorf("a chart with no Detail option rasterized %v while dragged, want %v", coarse, full)
 	}
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 }
 
 func TestDetailCanBeTurnedOff(t *testing.T) {
@@ -60,7 +60,7 @@ func TestDetailCanBeTurnedOff(t *testing.T) {
 	if coarse := buffer(t, c); coarse != full {
 		t.Errorf("a chart told to keep its detail rasterized %v while dragged, want %v", coarse, full)
 	}
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 }
 
 func TestAWheelSharpensOnceItStops(t *testing.T) {
@@ -98,7 +98,7 @@ func TestACoarseFrameIsNotMistakenForTheDisplay(t *testing.T) {
 	if got := buffer(t, c); got.X != 250 {
 		t.Errorf("a painted coarse frame changed the rasterizer to %v", got)
 	}
-	c.DragEnd()
+	chart.PointerOf(c).DragEnd()
 	if after := buffer(t, c); after.X != 500 {
 		t.Errorf("after the drag the chart rasterizes %v, want the full 500 wide", after)
 	}

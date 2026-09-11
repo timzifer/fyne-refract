@@ -5,7 +5,9 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 	"github.com/timzifer/figure/interact"
 	"github.com/timzifer/figure/ir"
 	"github.com/timzifer/figure/three"
@@ -16,13 +18,93 @@ import (
 // so a pointer that moves faster than the scene can be drawn loses nothing:
 // three.Orbit adds angles and three.Dolly multiplies factors, and both are the
 // same done once or in steps.
+//
+// None of it is the chart's own. The handlers belong to pointer, a layer laid
+// over the raster that is hidden unless the chart was made [Interactive], for
+// the reason package chart gives: Fyne sends an event to whatever implements
+// the interface for it, wanted or not, and a hidden layer is not found at all.
 
 // hoverSlop is how far from a mark, in logical pixels, the pointer still
 // finds it. A face is found anywhere inside it; this is for a line.
 const hoverSlop = 6
 
+// pointer is the layer that takes the pointer for a chart. A drag arrives
+// through Dragged, so it is not Mouseable: a press that does not move turns
+// nothing and has nothing to say.
+type pointer struct {
+	widget.BaseWidget
+	c *Chart
+}
+
+var (
+	_ fyne.Widget         = (*pointer)(nil)
+	_ fyne.Draggable      = (*pointer)(nil)
+	_ fyne.Scrollable     = (*pointer)(nil)
+	_ fyne.DoubleTappable = (*pointer)(nil)
+	_ desktop.Hoverable   = (*pointer)(nil)
+	_ desktop.Cursorable  = (*pointer)(nil)
+)
+
+func newPointer(c *Chart, on bool) *pointer {
+	p := &pointer{c: c}
+	p.Hidden = !on
+	p.ExtendBaseWidget(p)
+	return p
+}
+
+// CreateRenderer is called by Fyne. It is not part of the API. The layer draws
+// nothing; it is there to be found.
+func (p *pointer) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(container.NewWithoutLayout())
+}
+
+// SetInteractive lets a reader turn the scene, or takes the pointer back from
+// them. It is [Interactive] for a chart already on screen.
+//
+// Taking it back lands a drag in progress where it had got to and ends a
+// hover; the cameras stay where the reader put them. [Chart.Home] is the way
+// back from there.
+func (c *Chart) SetInteractive(on bool) {
+	c.lock.Lock()
+	was := c.cfg.interactive
+	c.cfg.interactive = on
+	if was && !on {
+		c.leave()
+	}
+	c.lock.Unlock()
+
+	// Outside the lock: showing or hiding a widget refreshes it, and the layer
+	// is Fyne's to refresh, not the chart's.
+	if on {
+		c.ptr.Show()
+	} else {
+		c.ptr.Hide()
+	}
+}
+
+// Interactive reports whether a reader can turn, dolly and hover the scene.
+// See [Interactive].
+func (c *Chart) Interactive() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.cfg.interactive
+}
+
+// leave ends whatever the pointer was doing: the turn it built up is drawn,
+// the gesture forgotten, and a hover reported over. The lock is held by the
+// caller.
+func (c *Chart) leave() {
+	c.settle()
+	c.dragging, c.turning = false, noView
+	if c.hovering && c.onHover != nil {
+		c.hovering = false
+		c.onHover(interact.Hit{Row: -1}, false)
+	}
+}
+
 // Dragged is called by Fyne. It is not part of the API.
-func (c *Chart) Dragged(ev *fyne.DragEvent) {
+func (p *pointer) Dragged(ev *fyne.DragEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -38,16 +120,20 @@ func (c *Chart) Dragged(ev *fyne.DragEvent) {
 	if c.turning == noView {
 		return
 	}
-	// Device y grows downward, so dragging down tips the scene toward the
-	// reader: the camera's elevation falls, as it does in figure's own
-	// example of the host's side of an orbit.
-	c.dAz += float64(ev.Dragged.DX) * c.cfg.perPixel
-	c.dEl -= float64(ev.Dragged.DY) * c.cfg.perPixel
+	// A drag takes hold of the scene: the side facing the reader follows the
+	// pointer, as it does in three.js's OrbitControls, in Blender and in
+	// matplotlib. That is the camera going the other way round — a drag to
+	// the right carries it left about the up axis, so its azimuth falls, and
+	// device y grows downward, so a drag down lifts it and its elevation
+	// rises.
+	c.dAz -= float64(ev.Dragged.DX) * c.cfg.perPixel
+	c.dEl += float64(ev.Dragged.DY) * c.cfg.perPixel
 	c.pace()
 }
 
 // DragEnd is called by Fyne. It is not part of the API.
-func (c *Chart) DragEnd() {
+func (p *pointer) DragEnd() {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -60,7 +146,8 @@ func (c *Chart) DragEnd() {
 //
 // Fyne counts a notch upward and in its own units. Upward brings the scene
 // closer, which is a dolly by more than one.
-func (c *Chart) Scrolled(ev *fyne.ScrollEvent) {
+func (p *pointer) Scrolled(ev *fyne.ScrollEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -85,28 +172,32 @@ func (c *Chart) Scrolled(ev *fyne.ScrollEvent) {
 }
 
 // DoubleTapped is called by Fyne. It is not part of the API.
-func (c *Chart) DoubleTapped(*fyne.PointEvent) {
+func (p *pointer) DoubleTapped(*fyne.PointEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.home()
 }
 
 // MouseIn is called by Fyne. It is not part of the API.
-func (c *Chart) MouseIn(ev *desktop.MouseEvent) {
+func (p *pointer) MouseIn(ev *desktop.MouseEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.hover(ev.Position)
 }
 
 // MouseMoved is called by Fyne. It is not part of the API.
-func (c *Chart) MouseMoved(ev *desktop.MouseEvent) {
+func (p *pointer) MouseMoved(ev *desktop.MouseEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.hover(ev.Position)
 }
 
 // MouseOut is called by Fyne. It is not part of the API.
-func (c *Chart) MouseOut() {
+func (p *pointer) MouseOut() {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.hovering && c.onHover != nil {
@@ -116,7 +207,7 @@ func (c *Chart) MouseOut() {
 }
 
 // Cursor is called by Fyne. It is not part of the API.
-func (c *Chart) Cursor() desktop.Cursor { return c.cfg.cursor }
+func (p *pointer) Cursor() desktop.Cursor { return p.c.cfg.cursor }
 
 // hover asks the last frame's hit index what is under the pointer. It draws
 // nothing, so it is not paced, and it says nothing when a miss follows a miss.

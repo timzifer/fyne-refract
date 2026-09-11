@@ -62,7 +62,7 @@ func legendAt(t *testing.T, c *chart.Chart) (fyne.Position, figure.Hit) {
 	for y := float32(4); y < 300; y += 4 {
 		for x := float32(4); x < 500; x += 4 {
 			ok = false
-			c.MouseMoved(&desktop.MouseEvent{PointEvent: fyne.PointEvent{Position: fyne.NewPos(x, y)}})
+			chart.PointerOf(c).MouseMoved(&desktop.MouseEvent{PointEvent: fyne.PointEvent{Position: fyne.NewPos(x, y)}})
 			if ok {
 				return fyne.NewPos(x, y), found
 			}
@@ -76,7 +76,7 @@ func legendAt(t *testing.T, c *chart.Chart) (fyne.Position, figure.Hit) {
 // row carries no X and no Y. A tooltip that described one would say "x 0, y 0"
 // beside the series name, which is a lie about where the pointer is.
 func TestATooltipSaysNothingAboutTheLegend(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	shownAt(t, c)
 
 	pos, hit := legendAt(t, c)
@@ -92,7 +92,7 @@ func TestATooltipSaysNothingAboutTheLegend(t *testing.T) {
 // A hover over a mark still shows one. The gate is on the kind of hit and not
 // on the tooltip.
 func TestATooltipStillSaysWhatIsUnderAMark(t *testing.T) {
-	c := chart.New(legendPlot(), chart.ThemeFont(false))
+	c := chart.New(legendPlot(), chart.Interactive(true), chart.ThemeFont(false))
 	win := shownAt(t, c)
 
 	if !hoverAMark(t, c, win) {

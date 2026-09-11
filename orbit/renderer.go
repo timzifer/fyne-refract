@@ -24,6 +24,10 @@ func (r *renderer) Layout(size fyne.Size) {
 		obj.Move(fyne.NewPos(0, 0))
 		obj.Resize(size)
 	}
+	// The pointer layer covers the chart whether or not it is shown, so that
+	// making the chart interactive needs no layout of its own.
+	r.c.ptr.Move(fyne.NewPos(0, 0))
+	r.c.ptr.Resize(size)
 	r.c.resize(size)
 }
 

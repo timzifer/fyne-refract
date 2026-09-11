@@ -2,7 +2,9 @@ package chart
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 )
 
 // The pointer. Every handler hands the position to figure.Input and then asks
@@ -13,26 +15,109 @@ import (
 // between them: while a button is held on a draggable object, MouseMoved stops
 // firing and Dragged fires instead. figure.Input wants one stream of
 // positions and works out for itself whether it is a hover or a pan.
+//
+// None of it is the chart's own. The handlers belong to pointer, a layer laid
+// over the raster that is hidden unless the chart was made [Interactive]. Fyne
+// decides where an event goes by the interfaces an object implements, not by
+// whether it wants the event, so a chart that were Scrollable itself would take
+// the wheel from the scroll container around it even while ignoring every
+// notch. A hidden layer is not found at all, and the event goes to whatever is
+// behind it.
+
+// pointer is the layer that takes the pointer for a chart.
+type pointer struct {
+	widget.BaseWidget
+	c *Chart
+}
+
+// The interfaces the layer answers. Tapping is deliberately not among them: a
+// click already arrives through MouseUp, where figure's own click slop decides
+// whether it was one, and fyne.Tappable would deliver a second copy of it a
+// double-click delay later.
+var (
+	_ fyne.Widget         = (*pointer)(nil)
+	_ fyne.Draggable      = (*pointer)(nil)
+	_ fyne.Scrollable     = (*pointer)(nil)
+	_ fyne.DoubleTappable = (*pointer)(nil)
+	_ desktop.Hoverable   = (*pointer)(nil)
+	_ desktop.Mouseable   = (*pointer)(nil)
+	_ desktop.Cursorable  = (*pointer)(nil)
+)
+
+func newPointer(c *Chart, on bool) *pointer {
+	p := &pointer{c: c}
+	p.Hidden = !on
+	p.ExtendBaseWidget(p)
+	return p
+}
+
+// CreateRenderer is called by Fyne. It is not part of the API. The layer draws
+// nothing; it is there to be found.
+func (p *pointer) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(container.NewWithoutLayout())
+}
+
+// SetInteractive lets a reader at the chart, or takes the pointer back from
+// them. It is [Interactive] for a chart already on screen.
+//
+// Taking it back ends whatever the reader was doing as a pointer leaving the
+// chart would — a drag in progress is released, a tooltip hidden — and leaves
+// the view where they put it. [Chart.Autoscale] is the way back from there.
+func (c *Chart) SetInteractive(on bool) {
+	c.lock.Lock()
+	was := c.cfg.interactive
+	c.cfg.interactive = on
+	if was && !on {
+		c.leave()
+		c.tip.hide()
+	}
+	c.lock.Unlock()
+
+	// Outside the lock: showing or hiding a widget refreshes it, and the layer
+	// is Fyne's to refresh, not the chart's.
+	if on {
+		c.ptr.Show()
+	} else {
+		c.ptr.Hide()
+	}
+}
+
+// Interactive reports whether a reader can hover, drag, zoom and click the
+// chart. See [Interactive].
+func (c *Chart) Interactive() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.cfg.interactive
+}
 
 // MouseIn is called by Fyne. It is not part of the API.
-func (c *Chart) MouseIn(ev *desktop.MouseEvent) {
+func (p *pointer) MouseIn(ev *desktop.MouseEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.moved(ev.Position)
 }
 
 // MouseMoved is called by Fyne. It is not part of the API.
-func (c *Chart) MouseMoved(ev *desktop.MouseEvent) {
+func (p *pointer) MouseMoved(ev *desktop.MouseEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.moved(ev.Position)
 }
 
 // MouseOut is called by Fyne. It is not part of the API.
-func (c *Chart) MouseOut() {
+func (p *pointer) MouseOut() {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	c.leave()
+}
 
+// leave is the pointer leaving the chart: whatever it was doing ends, and a
+// band it was dragging out comes off the screen. The lock is held by the
+// caller.
+func (c *Chart) leave() {
 	if c.in == nil {
 		return
 	}
@@ -61,7 +146,8 @@ func (c *Chart) MouseOut() {
 }
 
 // MouseDown is called by Fyne. It is not part of the API.
-func (c *Chart) MouseDown(ev *desktop.MouseEvent) {
+func (p *pointer) MouseDown(ev *desktop.MouseEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -125,7 +211,8 @@ func (c *Chart) up(pos fyne.Position) {
 }
 
 // MouseUp is called by Fyne. It is not part of the API.
-func (c *Chart) MouseUp(ev *desktop.MouseEvent) {
+func (p *pointer) MouseUp(ev *desktop.MouseEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -140,7 +227,8 @@ func (c *Chart) MouseUp(ev *desktop.MouseEvent) {
 }
 
 // Dragged is called by Fyne. It is not part of the API.
-func (c *Chart) Dragged(ev *fyne.DragEvent) {
+func (p *pointer) Dragged(ev *fyne.DragEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -155,7 +243,8 @@ func (c *Chart) Dragged(ev *fyne.DragEvent) {
 //
 // Fyne reports the end of a drag without a position, so the last one seen is
 // what the release is reported at — which is where the pointer is.
-func (c *Chart) DragEnd() {
+func (p *pointer) DragEnd() {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -173,7 +262,8 @@ func (c *Chart) DragEnd() {
 // Fyne counts a wheel notch in its own units and upwards; figure counts it in
 // the browser's pixels and downwards, where a positive delta pushes the chart
 // away and zooms out. [WheelScale] is the conversion.
-func (c *Chart) Scrolled(ev *fyne.ScrollEvent) {
+func (p *pointer) Scrolled(ev *fyne.ScrollEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -216,7 +306,8 @@ func (c *Chart) zoom() {
 }
 
 // DoubleTapped is called by Fyne. It is not part of the API.
-func (c *Chart) DoubleTapped(*fyne.PointEvent) {
+func (p *pointer) DoubleTapped(*fyne.PointEvent) {
+	c := p.c
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -235,7 +326,7 @@ func (c *Chart) DoubleTapped(*fyne.PointEvent) {
 }
 
 // Cursor is called by Fyne. It is not part of the API.
-func (c *Chart) Cursor() desktop.Cursor { return c.cfg.cursor }
+func (p *pointer) Cursor() desktop.Cursor { return p.c.cfg.cursor }
 
 // moved is the one path a pointer position takes into the chart. Input decides
 // whether it is a hover or a pan.
