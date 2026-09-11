@@ -49,4 +49,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/gogpu/gg => github.com/timzifer/gg v0.52.6-figure.1
+replace github.com/gogpu/gg => github.com/timzifer/gg v0.52.6-figure.2
